@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+        .chart {
+            margin-bottom: 50px;
+        }
+        .line {
+            fill: none;
+            stroke-width: 2px;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+        .grid line {
+            stroke: lightgrey;
+            stroke-opacity: 0.7;
+            shape-rendering: crispEdges;
+        }
+        .grid path {
+            stroke-width: 0;
+        }
+        /* Styles for data boxes */
+        .data-container {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+        .data-box {
+            width: 150px;
+            height: 50px;
+            margin-right: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+        }
+        .data-box span {
+            display: block;
+            font-size: 14px;
+            font-weight: normal;
+            color: white;
+        }
+        #temperature-box {
+            background-color: steelblue;
+        }
+        #humidity-box {
+            background-color: green;
+        }
+        /* Dropdown styles */
+        .dropdown {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+        }
+        .dropdown select {
+            padding: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Two aligned boxes at the top for displaying sensor data -->
+    <div class="data-container">
+        <div id="temperature-box" class="data-box">
+            <span>Temperature</span>
+            <div id="temperature-value">-- °C</div>
+        </div>
+        <div id="humidity-box" class="data-box">
+            <span>Humidity</span>
+            <div id="humidity-value">-- %</div>
+        </div>
+    </div>
+
+    <!-- Dropdown for selecting timeframes -->
+    <div class="dropdown">
+        <label for="timeframe">Select Timeframe:</label>
+        <select id="timeframe">
+            <option value="60">1 Minute</option>
+            <option value="86400">1 Day</option>
+            <option value="604800">1 Week</option>
+        </select>
+    </div>
+
+    <div id="sensor-data">
+        <div id="temperature-chart" class="chart"></div>
+        <div id="humidity-chart" class="chart"></div>
+    </div>
+
+    <script>
+        // Variables for storing fetched sensor data
+        let temperatureData = [];
+        let humidityData = [];
+        let timeframe = 60; // Default timeframe set to 1 minute
+
+        // Function to fetch sensor data
+        function fetchSensorData() {
+            fetch('http://192.168.1.40:5000/sensor_data')
+                .then(response => response.json())
+                .then(data => {
+                    const now = new Date(); // Get the current timestamp
+                    
+                    // Add new data points
+                    temperatureData.push({ time: now, value: parseFloat(data.temperature) });
+                    humidityData.push({ time: now, value: parseFloat(data.humidity) });
+                    
+                    // Limit the number of data points stored based on timeframe
+                    if (temperatureData.length > timeframe) temperatureData.shift();
+                    if (humidityData.length > timeframe) humidityData.shift();
+
+                    // Update the actual value boxes
+                    document.getElementById('temperature-value').textContent = `${data.temperature} °C`;
+                    document.getElementById('humidity-value').textContent = `${data.humidity} %`;
+
+                    // Update the charts
+                    updateChart('#temperature-chart', temperatureData, 'Temperature (°C)', 'steelblue');
+                    updateChart('#humidity-chart', humidityData, 'Humidity (%)', 'green');
+                })
+                .catch(error => console.error('Error fetching sensor data:', error));
+        }
+
+        // Initialize chart dimensions
+        const margin = { top: 20, right: 20, bottom: 30, left: 50 };
+        const width = 800 - margin.left - margin.right;
+        const height = 300 - margin.top - margin.bottom;
+
+        // Set up SVG and chart structure
+        function setupChart(container) {
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            // Add clipping path to limit line movement
+            svg.append('defs')
+                .append('clipPath')
+                .attr('id', 'clip')
+                .append('rect')
+                .attr('width', width)
+                .attr('height', height);
+
+            // Add X and Y axis containers
+            svg.append('g').attr('class', 'x-axis').attr('transform', `translate(0,${height})`);
+            svg.append('g').attr('class', 'y-axis');
+
+            // Add line path placeholder, apply the clipping path
+            svg.append('path')
+                .attr('class', 'line')
+                .attr('clip-path', 'url(#clip)');  // Apply clipping here
+
+            // Add gridline placeholders
+            svg.append('g').attr('class', 'grid');
+
+            return svg;
+        }
+
+        // Create chart containers for temperature and humidity
+        const temperatureChart = setupChart('#temperature-chart');
+        const humidityChart = setupChart('#humidity-chart');
+
+        // Function to add Y-axis gridlines
+        function makeYGridlines(y) {
+            return d3.axisLeft(y).ticks(5);
+        }
+
+        // Function to update chart with new data
+        function updateChart(container, data, yLabel, color) {
+            const svg = d3.select(container + ' svg g');
+
+            // X-axis scale based on the selected timeframe
+            const now = new Date();
+            const xDomain = [
+                new Date(now.getTime() - (timeframe * 1000)),
+                now
+            ];
+            const x = d3.scaleTime()
+                .domain(xDomain)
+                .range([0, width]);
+
+            // Y-axis scale (dynamic based on data)
+            const y = d3.scaleLinear()
+                .domain([d3.min(data, d => d.value) - 1, d3.max(data, d => d.value) + 1]) // Dynamic range
+                .range([height, 0]);
+
+            // Define the line
+            const line = d3.line()
+                .x(d => x(d.time))
+                .y(d => y(d.value));
+
+            // X-axis ticks based on the selected timeframe
+            let xTicks;
+            if (timeframe === 60) {
+                xTicks = d3.axisBottom(x).ticks(d3.timeSecond.every(5)); // Tick every 5 seconds for 1 minute
+            } else if (timeframe === 86400) {
+                xTicks = d3.axisBottom(x).ticks(d3.timeHour.every(2)); // Tick every 2 hours for 1 day
+            } else if (timeframe === 604800) {
+                xTicks = d3.axisBottom(x).ticks(d3.timeHour.every(12)); // Tick every 12 hours for 1 week
+            }
+
+            // Update X and Y axes
+            svg.select('.x-axis').call(xTicks);
+            svg.select('.y-axis').call(d3.axisLeft(y).ticks(5));
+
+            // Update line path, apply the clipping path
+            svg.select('.line')
+                .datum(data)
+                .attr('d', line)
+                .attr('stroke', color)
+                .attr('class', 'line')
+                .style('stroke-width', '2px')
+                .style('fill', 'none')
+                .attr('clip-path', 'url(#clip)');  // Ensure line is clipped here
+
+            // Add or update Y-axis grid lines
+            svg.select('.grid')
+                .call(makeYGridlines(y)
+                    .tickSize(-width)
+                    .tickFormat('')) // Remove tick labels for gridlines
+                .attr('class', 'grid');
+        }
+
+        // Fetch data and update charts every 1 second
+        fetchSensorData();
+        setInterval(fetchSensorData, 1000); // Refresh rate set to 1 second
+
+        // Handle dropdown change to adjust timeframe
+        document.getElementById('timeframe').addEventListener('change', function() {
+            timeframe = parseInt(this.value); // Get the selected value
+            updateChart('#temperature-chart', temperatureData, 'Temperature (°C)', 'steelblue');
+            updateChart('#humidity-chart', humidityData, 'Humidity (%)', 'green');
+        });
+    </script>
+</body>
+</html>
