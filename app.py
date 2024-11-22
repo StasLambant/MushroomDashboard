@@ -4,7 +4,7 @@ import busio
 import adafruit_sht31d
 from flask import Flask, jsonify, render_template
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 import db_writer  # Import the database writer module
 
 # Initialize Flask app
@@ -35,6 +35,28 @@ def get_sensor_data():
 def fetch_sensor_data():
     """Serve the latest sensor data as JSON."""
     return jsonify(sensor_data)
+
+@app.route('/sensor_data/1day', methods=['GET'])
+def fetch_sensor_data_1day():
+    """Serve sensor data for the last 1 day."""
+    end_time = datetime.now()
+    start_time = end_time - timedelta(days=1)
+    temperature_data, humidity_data = db_writer.get_sensor_data_for_period(start_time, end_time)
+    return jsonify({
+        "temperature": temperature_data,
+        "humidity": humidity_data
+    })
+
+@app.route('/sensor_data/7day', methods=['GET'])
+def fetch_sensor_data_7day():
+    """Serve sensor data for the last 7 days."""
+    end_time = datetime.now()
+    start_time = end_time - timedelta(days=7)
+    temperature_data, humidity_data = db_writer.get_sensor_data_for_period(start_time, end_time)
+    return jsonify({
+        "temperature": temperature_data,
+        "humidity": humidity_data
+    })
 
 @app.route('/', methods=['GET'])
 def home():

@@ -29,7 +29,6 @@
         .grid path {
             stroke-width: 0;
         }
-        /* Styles for data boxes */
         .data-container {
             display: flex;
             justify-content: flex-start;
@@ -59,7 +58,6 @@
         #humidity-box {
             background-color: green;
         }
-        /* Dropdown styles */
         .dropdown {
             position: absolute;
             top: 20px;
@@ -76,7 +74,6 @@
     </style>
 </head>
 <body>
-    <!-- Two aligned boxes at the top for displaying sensor data -->
     <div class="data-container">
         <div id="temperature-box" class="data-box">
             <span>Temperature</span>
@@ -88,13 +85,12 @@
         </div>
     </div>
 
-    <!-- Dropdown for selecting timeframes -->
     <div class="dropdown">
         <label for="timeframe">Select Timeframe:</label>
         <select id="timeframe">
-            <option value="60">1 Minute</option>
-            <option value="86400">1 Day</option>
-            <option value="604800">1 Week</option>
+            <option value="live">Live</option>
+            <option value="1day">1 Day</option>
+            <option value="7day">7 Days</option>
         </select>
     </div>
 
@@ -104,43 +100,76 @@
     </div>
 
     <script>
-        // Variables for storing fetched sensor data
         let temperatureData = [];
         let humidityData = [];
-        let timeframe = 60; // Default timeframe set to 1 minute
+        let timeframe = "live"; 
+        let liveInterval;
 
-        // Function to fetch sensor data
-        function fetchSensorData() {
-            fetch('http://192.168.1.40:5000/sensor_data')
+        // Function to fetch live sensor data
+        function fetchLiveSensorData() {
+            fetch('/sensor_data')
                 .then(response => response.json())
                 .then(data => {
-                    const now = new Date(); // Get the current timestamp
-                    
-                    // Add new data points
+                    const now = new Date();
                     temperatureData.push({ time: now, value: parseFloat(data.temperature) });
                     humidityData.push({ time: now, value: parseFloat(data.humidity) });
-                    
-                    // Limit the number of data points stored based on timeframe
-                    if (temperatureData.length > timeframe) temperatureData.shift();
-                    if (humidityData.length > timeframe) humidityData.shift();
 
-                    // Update the actual value boxes
+                    if (temperatureData.length > 60) temperatureData.shift();
+                    if (humidityData.length > 60) humidityData.shift();
+
                     document.getElementById('temperature-value').textContent = `${data.temperature} °C`;
                     document.getElementById('humidity-value').textContent = `${data.humidity} %`;
 
-                    // Update the charts
                     updateChart('#temperature-chart', temperatureData, 'Temperature (°C)', 'steelblue');
                     updateChart('#humidity-chart', humidityData, 'Humidity (%)', 'green');
                 })
-                .catch(error => console.error('Error fetching sensor data:', error));
+                .catch(error => console.error('Error fetching live sensor data:', error));
         }
+
+        // Function to fetch historical sensor data
+        function fetchHistoricalSensorData(endpoint) {
+            fetch(endpoint)
+                .then(response => response.json())
+                .then(data => {
+                    const now = new Date();
+                    temperatureData = data.temperature.map((value, i) => ({
+                        time: new Date(now.getTime() - (data.temperature.length - i) * 10000),
+                        value: value
+                    }));
+                    humidityData = data.humidity.map((value, i) => ({
+                        time: new Date(now.getTime() - (data.humidity.length - i) * 10000),
+                        value: value
+                    }));
+
+                    document.getElementById('temperature-value').textContent = "-- °C";
+                    document.getElementById('humidity-value').textContent = "-- %";
+
+                    updateChart('#temperature-chart', temperatureData, 'Temperature (°C)', 'steelblue');
+                    updateChart('#humidity-chart', humidityData, 'Humidity (%)', 'green');
+                })
+                .catch(error => console.error('Error fetching historical sensor data:', error));
+        }
+
+        // Function to handle timeframe selection changes
+        document.getElementById('timeframe').addEventListener('change', function () {
+            clearInterval(liveInterval);
+            timeframe = this.value;
+
+            if (timeframe === "live") {
+                liveInterval = setInterval(fetchLiveSensorData, 1000);
+            } else if (timeframe === "1day") {
+                fetchHistoricalSensorData('/sensor_data/1day');
+            } else if (timeframe === "7day") {
+                fetchHistoricalSensorData('/sensor_data/7day');
+            }
+        });
 
         // Initialize chart dimensions
         const margin = { top: 20, right: 20, bottom: 30, left: 50 };
         const width = 800 - margin.left - margin.right;
         const height = 300 - margin.top - margin.bottom;
 
-        // Set up SVG and chart structure
+        // Set up SVG chart
         function setupChart(container) {
             const svg = d3.select(container)
                 .append('svg')
@@ -149,7 +178,6 @@
                 .append('g')
                 .attr('transform', `translate(${margin.left},${margin.top})`);
 
-            // Add clipping path to limit line movement
             svg.append('defs')
                 .append('clipPath')
                 .attr('id', 'clip')
@@ -157,96 +185,38 @@
                 .attr('width', width)
                 .attr('height', height);
 
-            // Add X and Y axis containers
             svg.append('g').attr('class', 'x-axis').attr('transform', `translate(0,${height})`);
             svg.append('g').attr('class', 'y-axis');
-
-            // Add line path placeholder, apply the clipping path
-            svg.append('path')
-                .attr('class', 'line')
-                .attr('clip-path', 'url(#clip)');  // Apply clipping here
-
-            // Add gridline placeholders
+            svg.append('path').attr('class', 'line').attr('clip-path', 'url(#clip)');
             svg.append('g').attr('class', 'grid');
-
             return svg;
         }
 
-        // Create chart containers for temperature and humidity
         const temperatureChart = setupChart('#temperature-chart');
         const humidityChart = setupChart('#humidity-chart');
 
-        // Function to add Y-axis gridlines
-        function makeYGridlines(y) {
-            return d3.axisLeft(y).ticks(5);
-        }
-
-        // Function to update chart with new data
+        // Update chart with data
         function updateChart(container, data, yLabel, color) {
             const svg = d3.select(container + ' svg g');
-
-            // X-axis scale based on the selected timeframe
             const now = new Date();
-            const xDomain = [
-                new Date(now.getTime() - (timeframe * 1000)),
-                now
-            ];
             const x = d3.scaleTime()
-                .domain(xDomain)
+                .domain([new Date(now.getTime() - (timeframe === "live" ? 60 * 1000 : (timeframe === "1day" ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000))), now])
                 .range([0, width]);
 
-            // Y-axis scale (dynamic based on data)
             const y = d3.scaleLinear()
-                .domain([d3.min(data, d => d.value) - 1, d3.max(data, d => d.value) + 1]) // Dynamic range
+                .domain([d3.min(data, d => d.value) - 1, d3.max(data, d => d.value) + 1])
                 .range([height, 0]);
 
-            // Define the line
             const line = d3.line()
                 .x(d => x(d.time))
                 .y(d => y(d.value));
 
-            // X-axis ticks based on the selected timeframe
-            let xTicks;
-            if (timeframe === 60) {
-                xTicks = d3.axisBottom(x).ticks(d3.timeSecond.every(5)); // Tick every 5 seconds for 1 minute
-            } else if (timeframe === 86400) {
-                xTicks = d3.axisBottom(x).ticks(d3.timeHour.every(2)); // Tick every 2 hours for 1 day
-            } else if (timeframe === 604800) {
-                xTicks = d3.axisBottom(x).ticks(d3.timeHour.every(12)); // Tick every 12 hours for 1 week
-            }
-
-            // Update X and Y axes
-            svg.select('.x-axis').call(xTicks);
-            svg.select('.y-axis').call(d3.axisLeft(y).ticks(5));
-
-            // Update line path, apply the clipping path
-            svg.select('.line')
-                .datum(data)
-                .attr('d', line)
-                .attr('stroke', color)
-                .attr('class', 'line')
-                .style('stroke-width', '2px')
-                .style('fill', 'none')
-                .attr('clip-path', 'url(#clip)');  // Ensure line is clipped here
-
-            // Add or update Y-axis grid lines
-            svg.select('.grid')
-                .call(makeYGridlines(y)
-                    .tickSize(-width)
-                    .tickFormat('')) // Remove tick labels for gridlines
-                .attr('class', 'grid');
+            svg.select('.x-axis').call(d3.axisBottom(x));
+            svg.select('.y-axis').call(d3.axisLeft(y));
+            svg.select('.line').datum(data).attr('d', line).attr('stroke', color);
         }
 
-        // Fetch data and update charts every 1 second
-        fetchSensorData();
-        setInterval(fetchSensorData, 1000); // Refresh rate set to 1 second
-
-        // Handle dropdown change to adjust timeframe
-        document.getElementById('timeframe').addEventListener('change', function() {
-            timeframe = parseInt(this.value); // Get the selected value
-            updateChart('#temperature-chart', temperatureData, 'Temperature (°C)', 'steelblue');
-            updateChart('#humidity-chart', humidityData, 'Humidity (%)', 'green');
-        });
+        liveInterval = setInterval(fetchLiveSensorData, 1000);
     </script>
 </body>
 </html>
