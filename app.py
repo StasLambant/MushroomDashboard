@@ -1,18 +1,19 @@
 import time
-import board
-import busio
-import adafruit_sht31d
-from flask import Flask, jsonify, render_template
 import threading
 from datetime import datetime, timedelta
-import db_writer  # Import the database writer module
+from flask import Flask, jsonify, render_template
+
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
+import get_sensor_data
+import db_writer
+import humidity_control
+
 
 # Initialize Flask app
 app = Flask(__name__)
-
-# Initialize I2C bus and sensor
-i2c = busio.I2C(board.SCL, board.SDA)
-sensor = adafruit_sht31d.SHT31D(i2c)
 
 # Global variable to store sensor data
 sensor_data = {
@@ -20,16 +21,6 @@ sensor_data = {
     "humidity": None,
     "date": None
 }
-
-def get_sensor_data():
-    """Fetch temperature and humidity data from SHT3x sensor."""
-    try:
-        temperature = sensor.temperature
-        humidity = sensor.relative_humidity
-        return temperature, humidity
-    except Exception as e:
-        print(f"Error reading from SHT3x sensor: {e}")
-        return None, None
 
 @app.route('/sensor_data', methods=['GET'])
 def fetch_sensor_data():
@@ -67,7 +58,7 @@ def update_sensor_data():
     """Continuously update sensor data every second."""
     global sensor_data
     while True:
-        temperature, humidity = get_sensor_data()
+        temperature, humidity = get_sensor_data.get_sensor_data()  # Fetch sensor data from the get_sensor_data module
         if temperature is not None and humidity is not None:
             # Get the current date and time in the specified format
             current_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -95,6 +86,13 @@ if __name__ == "__main__":
     )
     db_writer_thread.daemon = True
     db_writer_thread.start()
+
+
+    # Start the humidity control thread
+    humidity_control_thread = threading.Thread(target=humidity_control.run_relay_control)
+    humidity_control_thread.daemon = True  # Ensures the thread exits when the main app stops
+    humidity_control_thread.start()
+
 
     # Start the Flask server (accessible on your local network)
     app.run(host='0.0.0.0', port=5000)

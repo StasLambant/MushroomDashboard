@@ -1,6 +1,7 @@
 import sqlite3
 import time
 from datetime import datetime
+import get_sensor_data  # Import the new sensor data module
 
 DB_FILE = "sensor_data.db"
 

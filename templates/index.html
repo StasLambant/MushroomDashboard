@@ -9,35 +9,22 @@
         body {
             font-family: sans-serif;
         }
-        .chart {
-            margin-bottom: 50px;
-        }
-        .line {
-            fill: none;
-            stroke-width: 2px;
-        }
-        .axis path,
-        .axis line {
-            fill: none;
-            shape-rendering: crispEdges;
-        }
-        .grid line {
-            stroke: lightgrey;
-            stroke-opacity: 0.7;
-            shape-rendering: crispEdges;
-        }
-        .grid path {
-            stroke-width: 0;
-        }
-        .data-container {
+
+        /* Flexbox container for the top elements */
+        .top-container {
             display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
             justify-content: flex-start;
+            align-items: center;
+            gap: 10px; /* Space between elements */
             margin-bottom: 20px;
+            padding: 10px;
         }
+
         .data-box {
+            flex: 0 0 auto; /* Prevent stretching */
             width: 150px;
             height: 50px;
-            margin-right: 10px;
             padding: 10px;
             border-radius: 8px;
             box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
@@ -46,39 +33,77 @@
             font-weight: bold;
             color: white;
         }
+
         .data-box span {
             display: block;
             font-size: 14px;
             font-weight: normal;
             color: white;
         }
+
         #temperature-box {
             background-color: steelblue;
         }
+
         #humidity-box {
-            background-color: green;
+            background-color: rgb(255, 153, 0);
         }
+
         .dropdown {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            padding: 10px;
+            flex: 0 0 auto; /* Prevent stretching */
         }
+
         .dropdown select {
             padding: 5px;
             font-size: 16px;
         }
-        svg {
-            display: block;
-            width: 100%;
+
+        /* Styles for the charts */
+        .chart-container {
+            margin-top: 20px;
+        }
+
+        .chart {
+            margin-bottom: 50px;
+        }
+
+        .line {
+            fill: none;
+            stroke-width: 2px;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+
+        .grid line {
+            stroke: lightgrey;
+            stroke-opacity: 0.7;
+            shape-rendering: crispEdges;
+        }
+
+        .grid path {
+            stroke-width: 0;
+        }
+
+        /* Responsive behavior */
+        @media (max-width: 600px) {
+            .data-box {
+                width: 120px;
+                font-size: 16px;
+            }
+
+            .dropdown select {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="data-container">
+    <!-- Flex container for Temperature, Humidity, and Timeframe -->
+    <div class="top-container">
         <div id="temperature-box" class="data-box">
             <span>Temperature</span>
             <div id="temperature-value">-- °C</div>
@@ -87,144 +112,187 @@
             <span>Humidity</span>
             <div id="humidity-value">-- %</div>
         </div>
+        <div class="dropdown">
+            <label for="timeframe">Select Timeframe:</label>
+            <select id="timeframe">
+                <option value="live">Live</option>
+                <option value="1day">1 Day</option>
+                <option value="7day">7 Days</option>
+            </select>
+        </div>
     </div>
 
-    <div class="dropdown">
-        <label for="timeframe">Select Timeframe:</label>
-        <select id="timeframe">
-            <option value="live">Live</option>
-            <option value="1day">1 Day</option>
-            <option value="7day">7 Days</option>
-        </select>
-    </div>
+    <!-- Chart Containers -->
+    <div class="chart-container">
+    <div id="dual-axis-chart" class="chart"></div>
+</div>
 
-    <div id="sensor-data">
-        <div id="temperature-chart" class="chart"></div>
-        <div id="humidity-chart" class="chart"></div>
-    </div>
 
     <script>
-        let temperatureData = [];
-        let humidityData = [];
-        let timeframe = "live"; 
-        let liveInterval;
+        // JavaScript for fetching and updating data...
 
-        // Chart dimensions are dynamically calculated based on window width
-        const margin = { top: 20, right: 20, bottom: 30, left: 50 };
-        const getChartWidth = () => Math.min(window.innerWidth - margin.left - margin.right, 800);
-        const height = 300 - margin.top - margin.bottom;
-
-        function setupChart(container) {
-            const svg = d3.select(container)
-                .append('svg')
-                .attr('viewBox', `0 0 ${getChartWidth() + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
-                .attr('preserveAspectRatio', 'xMidYMid meet')
-                .append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
-
-            svg.append('defs')
-                .append('clipPath')
-                .attr('id', 'clip')
-                .append('rect')
-                .attr('width', getChartWidth())
-                .attr('height', height);
-
-            svg.append('g').attr('class', 'x-axis').attr('transform', `translate(0,${height})`);
-            svg.append('g').attr('class', 'y-axis');
-            svg.append('path').attr('class', 'line').attr('clip-path', 'url(#clip)');
-            svg.append('g').attr('class', 'grid');
-            return svg;
-        }
-
-        const temperatureChart = setupChart('#temperature-chart');
-        const humidityChart = setupChart('#humidity-chart');
-
-        function updateChart(container, data, yLabel, color) {
-            const svg = d3.select(container + ' svg g');
-            const width = getChartWidth(); // Update width dynamically
-            const now = new Date();
-
-            const x = d3.scaleTime()
-                .domain([new Date(now.getTime() - (timeframe === "live" ? 60 * 1000 : (timeframe === "1day" ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000))), now])
-                .range([0, width]);
-
-            const y = d3.scaleLinear()
-                .domain([d3.min(data, d => d.value) - 1, d3.max(data, d => d.value) + 1])
-                .range([height, 0]);
-
-            const line = d3.line()
-                .x(d => x(d.time))
-                .y(d => y(d.value));
-
-            svg.select('.x-axis').call(d3.axisBottom(x));
-            svg.select('.y-axis').call(d3.axisLeft(y));
-            svg.select('.line').datum(data).attr('d', line).attr('stroke', color);
-            svg.select('.grid')
-                .call(d3.axisLeft(y).tickSize(-width).tickFormat(''));
-        }
-
-        function fetchLiveSensorData() {
-            fetch('/sensor_data')
-                .then(response => response.json())
-                .then(data => {
-                    const now = new Date();
-                    temperatureData.push({ time: now, value: parseFloat(data.temperature) });
-                    humidityData.push({ time: now, value: parseFloat(data.humidity) });
-
-                    if (temperatureData.length > 60) temperatureData.shift();
-                    if (humidityData.length > 60) humidityData.shift();
-
-                    document.getElementById('temperature-value').textContent = `${data.temperature} °C`;
-                    document.getElementById('humidity-value').textContent = `${data.humidity} %`;
-
-                    updateChart('#temperature-chart', temperatureData, 'Temperature (°C)', 'steelblue');
-                    updateChart('#humidity-chart', humidityData, 'Humidity (%)', 'green');
-                })
-                .catch(error => console.error('Error fetching live sensor data:', error));
-        }
-
-        function fetchHistoricalSensorData(endpoint) {
-            fetch(endpoint)
-                .then(response => response.json())
-                .then(data => {
-                    const now = new Date();
-                    temperatureData = data.temperature.map((value, i) => ({
-                        time: new Date(now.getTime() - (data.temperature.length - i) * 10000),
-                        value: value
-                    }));
-                    humidityData = data.humidity.map((value, i) => ({
-                        time: new Date(now.getTime() - (data.humidity.length - i) * 10000),
-                        value: value
-                    }));
-
-                    document.getElementById('temperature-value').textContent = "-- °C";
-                    document.getElementById('humidity-value').textContent = "-- %";
-
-                    updateChart('#temperature-chart', temperatureData, 'Temperature (°C)', 'steelblue');
-                    updateChart('#humidity-chart', humidityData, 'Humidity (%)', 'green');
-                })
-                .catch(error => console.error('Error fetching historical sensor data:', error));
-        }
-
-        document.getElementById('timeframe').addEventListener('change', function () {
-            clearInterval(liveInterval);
-            timeframe = this.value;
-
-            if (timeframe === "live") {
-                liveInterval = setInterval(fetchLiveSensorData, 1000);
-            } else if (timeframe === "1day") {
-                fetchHistoricalSensorData('/sensor_data/1day');
-            } else if (timeframe === "7day") {
-                fetchHistoricalSensorData('/sensor_data/7day');
-            }
-        });
-
-        liveInterval = setInterval(fetchLiveSensorData, 1000);
-
-        window.addEventListener('resize', () => {
-            updateChart('#temperature-chart', temperatureData, 'Temperature (°C)', 'steelblue');
-            updateChart('#humidity-chart', humidityData, 'Humidity (%)', 'green');
-        });
+        // Functionality for creating and updating charts remains unchanged
+        // and independently managed by JavaScript.
     </script>
+</body>
+</html>
+<script>
+    let combinedData = [];
+    let timeframe = "live";
+    let liveInterval;
+
+    const margin = { top: 20, right: 60, bottom: 30, left: 50 }; // Increased right margin for the second axis
+    const getChartWidth = () => Math.min(window.innerWidth - margin.left - margin.right, 800);
+    const height = 300 - margin.top - margin.bottom;
+
+    // Setup chart with dual axes
+    function setupDualAxisChart(container) {
+        const svg = d3.select(container)
+            .append('svg')
+            .attr('viewBox', `0 0 ${getChartWidth() + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+            .attr('preserveAspectRatio', 'xMidYMid meet')
+            .append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        svg.append('defs')
+            .append('clipPath')
+            .attr('id', 'clip')
+            .append('rect')
+            .attr('width', getChartWidth())
+            .attr('height', height);
+
+        svg.append('g').attr('class', 'x-axis').attr('transform', `translate(0,${height})`);
+        svg.append('g').attr('class', 'y-axis temperature-axis'); // Left axis
+        svg.append('g').attr('class', 'y-axis humidity-axis').attr('transform', `translate(${getChartWidth()},0)`); // Right axis
+        svg.append('path').attr('class', 'line temperature-line').attr('clip-path', 'url(#clip)');
+        svg.append('path').attr('class', 'line humidity-line').attr('clip-path', 'url(#clip)');
+        svg.append('g').attr('class', 'grid');
+        return svg;
+    }
+
+    const dualAxisChart = setupDualAxisChart('#dual-axis-chart');
+
+    // Update dual-axis chart with both temperature and humidity
+    function updateDualAxisChart(data) {
+        const svg = d3.select('#dual-axis-chart svg g');
+        const width = getChartWidth();
+        const now = new Date();
+
+        // Scales
+        const x = d3.scaleTime()
+            .domain([new Date(now.getTime() - (timeframe === "live" ? 60 * 1000 : (timeframe === "1day" ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000))), now])
+            .range([0, width]);
+
+        const yTemp = d3.scaleLinear()
+            .domain([d3.min(data, d => d.temperature) - 1, d3.max(data, d => d.temperature) + 1])
+            .range([height, 0]);
+
+        const yHumid = d3.scaleLinear()
+            .domain([d3.min(data, d => d.humidity) - 5, d3.max(data, d => d.humidity) + 5])
+            .range([height, 0]);
+
+        // Lines
+        const temperatureLine = d3.line()
+            .x(d => x(d.time))
+            .y(d => yTemp(d.temperature));
+
+        const humidityLine = d3.line()
+            .x(d => x(d.time))
+            .y(d => yHumid(d.humidity));
+
+        // Update axes
+        svg.select('.x-axis').call(d3.axisBottom(x));
+        svg.select('.temperature-axis').call(d3.axisLeft(yTemp).ticks(5).tickFormat(d => `${d}°C`));
+        svg.select('.humidity-axis').call(d3.axisRight(yHumid).ticks(5).tickFormat(d => `${d}%`));
+
+        // Update lines
+        svg.select('.temperature-line')
+            .datum(data)
+            .attr('d', temperatureLine)
+            .attr('stroke', 'steelblue');
+
+        svg.select('.humidity-line')
+            .datum(data)
+            .attr('d', humidityLine)
+            .attr('stroke', 'rgb(255, 153, 0)');
+
+        // Update grid lines for the left axis (temperature)
+        svg.select('.grid')
+            .call(d3.axisLeft(yTemp).tickSize(-width).tickFormat(''));
+    }
+
+    // Fetch live sensor data and update dual-axis chart
+    function fetchLiveSensorData() {
+        fetch('/sensor_data')
+            .then(response => response.json())
+            .then(data => {
+                const now = new Date();
+
+                // Add live data to combinedData array
+                combinedData.push({
+                    time: now,
+                    temperature: parseFloat(data.temperature.toFixed(1)),
+                    humidity: parseFloat(data.humidity.toFixed(1))
+                });
+
+                // Limit data length
+                if (combinedData.length > 60) combinedData.shift();
+
+                // Update the top boxes
+                document.getElementById('temperature-value').textContent = `${data.temperature.toFixed(1)} °C`;
+                document.getElementById('humidity-value').textContent = `${data.humidity.toFixed(1)} %`;
+
+                // Update the dual-axis chart
+                updateDualAxisChart(combinedData);
+            })
+            .catch(error => console.error('Error fetching live sensor data:', error));
+    }
+
+    // Fetch historical sensor data and update dual-axis chart
+    function fetchHistoricalSensorData(endpoint) {
+        fetch(endpoint)
+            .then(response => response.json())
+            .then(data => {
+                const now = new Date();
+
+                // Map combined data
+                combinedData = data.temperature.map((tempValue, i) => ({
+                    time: new Date(now.getTime() - (data.temperature.length - i) * 10000),
+                    temperature: parseFloat(tempValue.toFixed(1)),
+                    humidity: parseFloat(data.humidity[i].toFixed(1))
+                }));
+
+                // Reset the top boxes
+                document.getElementById('temperature-value').textContent = "-- °C";
+                document.getElementById('humidity-value').textContent = "-- %";
+
+                // Update the dual-axis chart
+                updateDualAxisChart(combinedData);
+            })
+            .catch(error => console.error('Error fetching historical sensor data:', error));
+    }
+
+    // Timeframe change listener
+    document.getElementById('timeframe').addEventListener('change', function () {
+        clearInterval(liveInterval); // Stop live interval when switching to historical
+
+        timeframe = this.value;
+
+        if (timeframe === "live") {
+            liveInterval = setInterval(fetchLiveSensorData, 1000);
+        } else if (timeframe === "1day") {
+            fetchHistoricalSensorData('/sensor_data/1day');
+        } else if (timeframe === "7day") {
+            fetchHistoricalSensorData('/sensor_data/7day');
+        }
+    });
+
+    // Initial live data fetch and update
+    liveInterval = setInterval(fetchLiveSensorData, 1000);
+
+    // Resize listener to update chart on window resize
+    window.addEventListener('resize', () => updateDualAxisChart(combinedData));
+</script>
+    
 </body>
 </html>
