@@ -6,11 +6,12 @@ from flask import Flask, jsonify, render_template
 import sys
 import os
 
+# Add the 'scripts' directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
-import get_sensor_data
-import db_writer
-import humidity_control
 
+import db_writer  # Import the database writer module
+import get_sensor_data  # Import the new sensor data script
+import humidity_control  # Import the humidity control script
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -87,12 +88,10 @@ if __name__ == "__main__":
     db_writer_thread.daemon = True
     db_writer_thread.start()
 
-
     # Start the humidity control thread
     humidity_control_thread = threading.Thread(target=humidity_control.run_relay_control)
-    humidity_control_thread.daemon = True  # Ensures the thread exits when the main app stops
+    humidity_control_thread.daemon = True  # Mark the thread as a daemon so it exits with the main program
     humidity_control_thread.start()
-
 
     # Start the Flask server (accessible on your local network)
     app.run(host='0.0.0.0', port=5000)

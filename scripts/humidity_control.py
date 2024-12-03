@@ -7,12 +7,12 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
 
 # Import get_sensor_data
-import get_sensor_data  #Fetch sensor data
+import get_sensor_data  # Now using the get_sensor_data module to fetch sensor data
 
 # Constants
-RELAY_PIN = 26  # GPIO pin for Relay 1 (connected to pin 20)
-HUMIDITY_THRESHOLD_ON = 87.9  # The humidity value above which relay will be turned ON
-HUMIDITY_THRESHOLD_OFF = 87.8  # The humidity value below which relay will be turned OFF
+RELAY_PIN = 26  # GPIO pin for Relay 1 (connected to pin 37)
+HUMIDITY_THRESHOLD_ON = 88.25  # The humidity value above which relay will be turned ON
+HUMIDITY_THRESHOLD_OFF = 88.22  # The humidity value below which relay will be turned OFF
 
 # Initialize GPIO settings
 GPIO.setmode(GPIO.BCM)  # Use BCM GPIO numbering
