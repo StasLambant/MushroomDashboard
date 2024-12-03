@@ -5,77 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sensor Dashboard</title>
     <script src="https://d3js.org/d3.v6.min.js"></script>
-    <style>
-        body {
-            font-family: sans-serif;
-        }
-        .chart {
-            margin-bottom: 50px;
-        }
-        .line {
-            fill: none;
-            stroke-width: 2px;
-        }
-        .axis path,
-        .axis line {
-            fill: none;
-            shape-rendering: crispEdges;
-        }
-        .grid line {
-            stroke: lightgrey;
-            stroke-opacity: 0.7;
-            shape-rendering: crispEdges;
-        }
-        .grid path {
-            stroke-width: 0;
-        }
-        .data-container {
-            display: flex;
-            justify-content: flex-start;
-            margin-bottom: 20px;
-        }
-        .data-box {
-            width: 150px;
-            height: 50px;
-            margin-right: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            font-size: 20px;
-            font-weight: bold;
-            color: white;
-        }
-        .data-box span {
-            display: block;
-            font-size: 14px;
-            font-weight: normal;
-            color: white;
-        }
-        #temperature-box {
-            background-color: steelblue;
-        }
-        #humidity-box {
-            background-color: rgb(255, 153, 0);
-        }
-        .dropdown {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            padding: 10px;
-        }
-        .dropdown select {
-            padding: 5px;
-            font-size: 16px;
-        }
-        svg {
-            display: block;
-            width: 100%;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
     <div class="data-container">
@@ -87,15 +17,14 @@
             <span>Humidity</span>
             <div id="humidity-value">-- %</div>
         </div>
-    </div>
-
-    <div class="dropdown">
-        <label for="timeframe">Select Timeframe:</label>
-        <select id="timeframe">
-            <option value="live">Live</option>
-            <option value="1day">1 Day</option>
-            <option value="7day">7 Days</option>
-        </select>
+        <div class="dropdown">
+            <label for="timeframe">Select Timeframe:</label>
+            <select id="timeframe">
+                <option value="live">Live</option>
+                <option value="1day">1 Day</option>
+                <option value="7day">7 Days</option>
+            </select>
+        </div>
     </div>
 
     <div class="chart-container">
@@ -259,5 +188,5 @@
         // Resize listener to update chart on window resize
         window.addEventListener('resize', () => updateDualAxisChart(combinedData));
     </script>
-    </body>
+</body>
 </html>

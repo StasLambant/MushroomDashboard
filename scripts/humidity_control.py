@@ -11,7 +11,7 @@ import get_sensor_data  # Now using the get_sensor_data module to fetch sensor d
 
 # Constants
 RELAY_PIN = 26  # GPIO pin for Relay 1 (connected to pin 37)
-HUMIDITY_THRESHOLD_ON = 88.25  # The humidity value above which relay will be turned ON
+HUMIDITY_THRESHOLD_ON = 99.99  # The humidity value above which relay will be turned ON
 HUMIDITY_THRESHOLD_OFF = 88.22  # The humidity value below which relay will be turned OFF
 
 # Initialize GPIO settings
