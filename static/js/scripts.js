@@ -153,3 +153,53 @@ liveInterval = setInterval(fetchLiveSensorData, 1000);
 
 // Resize listener to update chart on window resize
 window.addEventListener('resize', () => updateDualAxisChart(combinedData));
+
+// Settings modal functionality
+document.addEventListener('DOMContentLoaded', () => {
+    const settingsButton = document.getElementById('settings-button');
+    const modal = document.getElementById('settings-modal');
+    const closeModal = document.getElementById('close-modal');
+    const saveSettingsButton = document.getElementById('save-settings');
+    const humidifierOnInput = document.getElementById('humidifier-on');
+    const humidifierOffInput = document.getElementById('humidifier-off');
+
+    // Show the settings modal
+    settingsButton.addEventListener('click', () => {
+        modal.style.display = 'block';
+    });
+
+    // Close the settings modal
+    closeModal.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    // Save settings and validate inputs
+    saveSettingsButton.addEventListener('click', () => {
+        const humidifierOn = parseFloat(humidifierOnInput.value);
+        const humidifierOff = parseFloat(humidifierOffInput.value);
+
+        if (isNaN(humidifierOn) || isNaN(humidifierOff)) {
+            alert('Input must be numeric');
+            return;
+        }
+
+        if (humidifierOn >= humidifierOff) {
+            alert('Lower threshold must be below upper threshold');
+            return;
+        }
+
+        alert('Settings saved successfully!');
+        modal.style.display = 'none';
+
+        // Optionally: Save settings via API or global state
+        console.log('Humidifier ON Threshold:', humidifierOn);
+        console.log('Humidifier OFF Threshold:', humidifierOff);
+    });
+
+    // Close modal if user clicks outside of content
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
