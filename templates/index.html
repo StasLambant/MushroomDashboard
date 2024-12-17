@@ -38,15 +38,18 @@
         <div class="modal-content">
             <span id="close-modal" class="close-button">&times;</span>
             <h2>Humidity Settings</h2>
-            <div class="settings-input">
-                <label for="humidifier-on">Humidifier ON (Lower Threshold):</label>
-                <input type="text" id="humidifier-on" placeholder="Enter value">
-            </div>
-            <div class="settings-input">
-                <label for="humidifier-off">Humidifier OFF (Upper Threshold):</label>
-                <input type="text" id="humidifier-off" placeholder="Enter value">
-            </div>
-            <button id="save-settings" class="button">Save</button>
+            <form id="settings-form">
+                <div class="settings-input">
+                    <label for="humidifier-on">Humidifier ON (Lower Threshold):</label>
+                    <input type="number" id="humidifier-on" placeholder="Numeric value">
+                </div>
+                <div class="settings-input">
+                    <label for="humidifier-off">Humidifier OFF (Upper Threshold):</label>
+                    <input type="number" id="humidifier-off" placeholder="Enter value">
+                </div>
+                <button id="save-settings" class="button">Save</button>
+            </form>
+            <p id="error-message" class="error"></p>
         </div>
     </div>
 </body>

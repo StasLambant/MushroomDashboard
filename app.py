@@ -1,20 +1,23 @@
 import time
 import threading
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 
 import sys
 import os
+import json
 
 # Add the 'scripts' directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
 
 import db_writer  # Import the database writer module
 import get_sensor_data  # Import the new sensor data script
-import humidity_control  # Import the humidity control script
+import subprocess
 
 # Initialize Flask app
 app = Flask(__name__)
+
+VARIABLES_FILE = "variables/variables.json"
 
 # Global variable to store sensor data
 sensor_data = {
@@ -55,6 +58,39 @@ def home():
     """Serve the main HTML page."""
     return render_template('index.html')
 
+@app.route('/api/variables', methods=['GET'])
+def get_variables():
+    try:
+        # Ensure the file exists
+        if not os.path.exists(VARIABLES_FILE):
+            return jsonify({"error": "Variables file not found."}), 404
+
+        # Load variables from file
+        with open(VARIABLES_FILE, 'r') as file:
+            variables = json.load(file)
+
+        return jsonify(variables), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/variables', methods=['POST'])
+def update_variables():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided."}), 400
+
+        if not validate_variables(data):
+            return jsonify({"error": "Invalid data. Ensure numeric values and valid ON/OFF relationship."}), 400
+
+        with open(VARIABLES_FILE, 'w') as file:
+            json.dump(data, file, indent=4)
+
+        return jsonify({"message": "Variables updated successfully."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 def update_sensor_data():
     """Continuously update sensor data every second."""
     global sensor_data
@@ -70,6 +106,26 @@ def update_sensor_data():
             }
             print(f"Updated sensor data: {sensor_data}")
         time.sleep(1)  # sampling rate
+
+def validate_variables(data):
+    try:
+        if 'humidifier_on' not in data or 'humidifier_off' not in data:
+            return False
+
+        humidifier_on = data['humidifier_on']
+        humidifier_off = data['humidifier_off']
+
+        if not (isinstance(humidifier_on, (int, float)) and isinstance(humidifier_off, (int, float))):
+            return False
+        if round(humidifier_on, 1) != humidifier_on or round(humidifier_off, 1) != humidifier_off:
+            return False
+
+        if not humidifier_off > humidifier_on:
+            return False
+
+        return True
+    except:
+        return False
 
 if __name__ == "__main__":
     # Ensure the database is initialized
@@ -88,10 +144,9 @@ if __name__ == "__main__":
     db_writer_thread.daemon = True
     db_writer_thread.start()
 
-    # Start the humidity control thread
-    humidity_control_thread = threading.Thread(target=humidity_control.run_relay_control)
-    humidity_control_thread.daemon = True  # Mark the thread as a daemon so it exits with the main program
-    humidity_control_thread.start()
+    # Start the humidity control subprocess
+    humidity_control_path = os.path.join(os.path.dirname(__file__), 'scripts', 'humidity_control.py')
+    humidity_process = subprocess.Popen(['python3', humidity_control_path])
 
     # Start the Flask server (accessible on your local network)
     app.run(host='0.0.0.0', port=5000)
