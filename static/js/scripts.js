@@ -2,7 +2,7 @@ let combinedData = [];
 let timeframe = "live";
 let liveInterval;
 
-const margin = { top: 20, right: 60, bottom: 30, left: 50 }; // Increased right margin for the second axis
+const margin = { top: 20, right: 60, bottom: 30, left: 50 };
 const getChartWidth = () => Math.min(window.innerWidth - margin.left - margin.right, 800);
 const height = 300 - margin.top - margin.bottom;
 
@@ -23,8 +23,8 @@ function setupDualAxisChart(container) {
         .attr('height', height);
 
     svg.append('g').attr('class', 'x-axis').attr('transform', `translate(0,${height})`);
-    svg.append('g').attr('class', 'y-axis temperature-axis'); // Left axis
-    svg.append('g').attr('class', 'y-axis humidity-axis').attr('transform', `translate(${getChartWidth()},0)`); // Right axis
+    svg.append('g').attr('class', 'y-axis temperature-axis');
+    svg.append('g').attr('class', 'y-axis humidity-axis').attr('transform', `translate(${getChartWidth()},0)`);
     svg.append('path').attr('class', 'line temperature-line').attr('clip-path', 'url(#clip)');
     svg.append('path').attr('class', 'line humidity-line').attr('clip-path', 'url(#clip)');
     svg.append('g').attr('class', 'grid');
@@ -133,6 +133,17 @@ function fetchHistoricalSensorData(endpoint) {
         .catch(error => console.error('Error fetching historical sensor data:', error));
 }
 
+// Fetch relay state and update the humidifier state box
+function fetchRelayState() {
+    fetch('/relay_state')
+        .then(response => response.json())
+        .then(data => {
+            const relayState = data.relay_state === "LOW" ? "ON" : "OFF";
+            document.getElementById('relay-state-value').textContent = relayState;
+        })
+        .catch(error => console.error('Error fetching relay state:', error));
+}
+
 // Timeframe change listener
 document.getElementById('timeframe').addEventListener('change', function () {
     clearInterval(liveInterval); // Stop live interval when switching to historical
@@ -151,69 +162,92 @@ document.getElementById('timeframe').addEventListener('change', function () {
 // Initial live data fetch and update
 liveInterval = setInterval(fetchLiveSensorData, 1000);
 
+// Fetch relay state every 2 seconds
+setInterval(fetchRelayState, 2000);
+
 // Resize listener to update chart on window resize
 window.addEventListener('resize', () => updateDualAxisChart(combinedData));
 
-// Get elements
-const settingsModal = document.getElementById('settings-modal');
-const openSettingsBtn = document.getElementById('settings-button');
-const closeSettingsBtn = document.getElementById('close-modal'); 
-const settingsForm = document.getElementById('settings-form');
-const errorMessage = document.getElementById('error-message');
+// Settings modal functionality
+document.addEventListener('DOMContentLoaded', () => {
+    const settingsButton = document.getElementById('settings-button');
+    const modal = document.getElementById('settings-modal');
+    const closeModal = document.getElementById('close-modal');
+    const saveSettingsButton = document.getElementById('save-settings');
+    const humidifierOnInput = document.getElementById('humidifier-on');
+    const humidifierOffInput = document.getElementById('humidifier-off');
+    const debounceDelayInput = document.getElementById('debounce-delay');
+    const sensorFailLimitInput = document.getElementById('sensor-fail-limit');
 
-// Open settings modal
-openSettingsBtn.addEventListener('click', () => {
-    settingsModal.style.display = 'block';
-});
+    // Show the settings modal and load current configuration
+    settingsButton.addEventListener('click', () => {
+        fetch('/config')
+            .then(response => response.json())
+            .then(config => {
+                humidifierOnInput.value = config.lower;
+                humidifierOffInput.value = config.upper;
+                debounceDelayInput.value = config.debounce_delay;
+                sensorFailLimitInput.value = config.sensor_fail_limit;
+                modal.style.display = 'block';
+            })
+            .catch(error => console.error('Error fetching configuration:', error));
+    });
 
-// Close settings modal
-closeSettingsBtn.addEventListener('click', () => {
-    settingsModal.style.display = 'none';
-});
+    // Close the settings modal
+    closeModal.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
 
-// Form submission
-settingsForm.addEventListener('submit', (e) => {
-    e.preventDefault();
+    // Save settings and validate inputs
+    saveSettingsButton.addEventListener('click', () => {
+        const humidifierOn = parseFloat(humidifierOnInput.value);
+        const humidifierOff = parseFloat(humidifierOffInput.value);
+        const debounceDelay = parseFloat(debounceDelayInput.value);
+        const sensorFailLimit = parseFloat(sensorFailLimitInput.value);
 
-    const humidifierOn = parseFloat(document.getElementById('humidifier-on').value);
-    const humidifierOff = parseFloat(document.getElementById('humidifier-off').value);
-
-    // Basic validation on the inputs
-    if (isNaN(humidifierOn) || isNaN(humidifierOff)) {
-        errorMessage.textContent = 'Both values must be numeric.';
-        return;
-    }
-
-    if (humidifierOff <= humidifierOn) {
-        errorMessage.textContent = 'Humidifier OFF must be greater than Humidifier ON.';
-        return;
-    }
-
-    // Prepare the data to send
-    const data = {
-        humidifier_on: humidifierOn,
-        humidifier_off: humidifierOff
-    };
-
-    // Send the data to the backend API
-    fetch('/api/variables', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.message) {
-            alert(result.message);
-            settingsModal.style.display = 'none'; // Close modal on success
-        } else if (result.error) {
-            errorMessage.textContent = result.error;
+        if (isNaN(humidifierOn) || isNaN(humidifierOff) || isNaN(debounceDelay) || isNaN(sensorFailLimit)) {
+            alert('All inputs must be numeric');
+            return;
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        errorMessage.textContent = 'An error occurred while saving the data.';
+
+        if (humidifierOn >= humidifierOff) {
+            alert('Lower threshold must be below upper threshold');
+            return;
+        }
+
+        if (debounceDelay < 0 || sensorFailLimit < 0) {
+            alert('Debounce delay and sensor fail limit must be positive numbers');
+            return;
+        }
+
+        // Send updated configuration to the backend
+        fetch('/config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                lower: humidifierOn,
+                upper: humidifierOff,
+                debounce_delay: debounceDelay,
+                sensor_fail_limit: sensorFailLimit
+            }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert('Settings saved successfully!');
+                modal.style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error saving configuration:', error);
+                alert('Failed to save settings. Please try again.');
+            });
+    });
+
+    // Close modal if user clicks outside of content
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
     });
 });

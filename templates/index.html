@@ -18,6 +18,10 @@
             <span>Humidity</span>
             <div id="humidity-value">-- %</div>
         </div>
+        <div id="relay-state-box" class="data-box">
+            <span>Humidifier State</span>
+            <div id="relay-state-value">--</div>
+        </div>
         <div class="dropdown">
             <label for="timeframe">Select Timeframe:</label>
             <select id="timeframe">
@@ -38,18 +42,23 @@
         <div class="modal-content">
             <span id="close-modal" class="close-button">&times;</span>
             <h2>Humidity Settings</h2>
-            <form id="settings-form">
-                <div class="settings-input">
-                    <label for="humidifier-on">Humidifier ON (Lower Threshold):</label>
-                    <input type="number" id="humidifier-on" placeholder="Numeric value">
-                </div>
-                <div class="settings-input">
-                    <label for="humidifier-off">Humidifier OFF (Upper Threshold):</label>
-                    <input type="number" id="humidifier-off" placeholder="Enter value">
-                </div>
-                <button id="save-settings" class="button">Save</button>
-            </form>
-            <p id="error-message" class="error"></p>
+            <div class="settings-input">
+                <label for="humidifier-on">Humidifier ON (Lower Threshold):</label>
+                <input type="text" id="humidifier-on" placeholder="Enter value">
+            </div>
+            <div class="settings-input">
+                <label for="humidifier-off">Humidifier OFF (Upper Threshold):</label>
+                <input type="text" id="humidifier-off" placeholder="Enter value">
+            </div>
+            <div class="settings-input">
+                <label for="debounce-delay">Debounce Delay (seconds):</label>
+                <input type="text" id="debounce-delay" placeholder="Enter value">
+            </div>
+            <div class="settings-input">
+                <label for="sensor-fail-limit">Sensor Fail Limit:</label>
+                <input type="text" id="sensor-fail-limit" placeholder="Enter value">
+            </div>
+            <button id="save-settings" class="button">Save</button>
         </div>
     </div>
 </body>

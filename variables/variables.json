@@ -1,1 +1,7 @@
-{"upper": 55, "lower": 50}
+{
+    "lower": 85.00,
+    "upper": 88.22,
+    "debounce_delay": 30,
+    "sensor_fail_limit": 3
+  }
+  
