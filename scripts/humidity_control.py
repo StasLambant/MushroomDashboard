@@ -2,14 +2,6 @@ import RPi.GPIO as GPIO
 import time
 import sys
 import os
-
-# Add the 'scripts' folder to the Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
-
-# Import get_sensor_dataimport RPi.GPIO as GPIO
-import time
-import sys
-import os
 import json
 
 # Add the 'scripts' folder to the Python path
@@ -58,7 +50,8 @@ def check_and_control_relay():
     """
     global last_relay_state, last_switch_time, sensor_fail_count
 
-    lower_threshold, upper_threshold, debounce_delay, sensor_fail_limit = load_config()  # Get updated settings
+    # Reload configuration every time to ensure real-time updates
+    lower_threshold, upper_threshold, debounce_delay, sensor_fail_limit = load_config()
 
     try:
         temperature, humidity = get_sensor_data.get_sensor_data()  # Fetch sensor data
@@ -66,7 +59,7 @@ def check_and_control_relay():
         if humidity is None:
             sensor_fail_count += 1
             print(f"Sensor read failed ({sensor_fail_count}/{sensor_fail_limit})")
-            
+
             # If sensor keeps failing, turn relay OFF for safety
             if sensor_fail_count >= sensor_fail_limit:
                 if last_relay_state == GPIO.LOW:
@@ -74,7 +67,7 @@ def check_and_control_relay():
                     last_relay_state = GPIO.HIGH
                     print("Sensor failure: Turning relay OFF for safety.")
             return  # Skip further processing on failure
-        
+
         # Reset sensor failure count on successful read
         sensor_fail_count = 0
         print(f"Current Humidity: {humidity}%")
@@ -82,9 +75,12 @@ def check_and_control_relay():
         # Get current time
         current_time = time.time()
 
+        print(f"last_relay_state: {last_relay_state}, last_switch_time: {last_switch_time}, current_time: {current_time}")
+
         # Check if relay needs to switch ON
         if humidity < lower_threshold and last_relay_state == GPIO.HIGH:
             if current_time - last_switch_time >= debounce_delay:
+                print("Turning relay ON")
                 GPIO.output(RELAY_PIN, GPIO.LOW)
                 last_relay_state = GPIO.LOW
                 last_switch_time = current_time
@@ -93,6 +89,7 @@ def check_and_control_relay():
         # Check if relay needs to switch OFF
         elif humidity > upper_threshold and last_relay_state == GPIO.LOW:
             if current_time - last_switch_time >= debounce_delay:
+                print("Turning relay OFF")
                 GPIO.output(RELAY_PIN, GPIO.HIGH)
                 last_relay_state = GPIO.HIGH
                 last_switch_time = current_time
@@ -125,7 +122,7 @@ def initialize_relay_state():
             last_relay_state = GPIO.HIGH
             print("Startup: Relay OFF (Humidity above upper threshold).")
         else:
-            print("Startup: Humidity in normal range, relay state unchanged.")
+            print("Startup: Humidity within set range, relay state unchanged.")
     else:
         print("Startup: Sensor read failed, defaulting relay to OFF for safety.")
         GPIO.output(RELAY_PIN, GPIO.HIGH)  # Fail-safe default
@@ -138,67 +135,13 @@ def run_relay_control():
     try:
         while True:
             check_and_control_relay()
-            time.sleep(3)  # Check every 5 seconds (adjustable)
+            time.sleep(3)  # Check every 3 seconds (adjustable)
 
     except KeyboardInterrupt:
         print("Relay control stopped.")
     finally:
         GPIO.cleanup()  # Cleanup GPIO settings on exit
 
-
-if __name__ == "__main__":
-    run_relay_control()
-
-import get_sensor_data  # Now using the get_sensor_data module to fetch sensor data
-
-# Constants
-RELAY_PIN = 26  # GPIO pin for Relay 1 (connected to pin 37)
-HUMIDITY_THRESHOLD_ON = 85.00  # The humidity value above which relay will be turned ON
-HUMIDITY_THRESHOLD_OFF = 88.22  # The humidity value below which relay will be turned OFF
-
-# Initialize GPIO settings
-GPIO.setmode(GPIO.BCM)  # Use BCM GPIO numbering
-GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.HIGH)  # Set relay pin as output
-
-def check_and_control_relay():
-    """
-    This function will check the current humidity from the sensor and control the relay.
-    """
-    try:
-        # Fetch the latest temperature and humidity from the sensor
-        temperature, humidity = get_sensor_data.get_sensor_data()  # Get temperature and humidity from the sensor
-
-        if humidity is not None:
-            print(f"Current Humidity: {humidity}%")
-            
-            # Switch relay ON if humidity is above threshold
-            if humidity > HUMIDITY_THRESHOLD_ON:
-                if GPIO.input(RELAY_PIN) == GPIO.HIGH:  # If relay is off, turn it on
-                    GPIO.output(RELAY_PIN, GPIO.LOW)
-                    print("Relay ON - Humidity is above threshold.")
-            
-            # Switch relay OFF if humidity is below threshold
-            elif humidity < HUMIDITY_THRESHOLD_OFF:
-                if GPIO.input(RELAY_PIN) == GPIO.LOW:  # If relay is on, turn it off
-                    GPIO.output(RELAY_PIN, GPIO.HIGH)
-                    print("Relay OFF - Humidity is below threshold.")
-        else:
-            print("Failed to get humidity data.")
-
-    except Exception as e:
-        print(f"Error in controlling relay: {e}")
-
-def run_relay_control():
-    """Continuously monitor the humidity and control relay based on thresholds."""
-    try:
-        while True:
-            check_and_control_relay()
-            time.sleep(2)  # Check every 2 seconds
-
-    except KeyboardInterrupt:
-        print("Relay control stopped.")
-    finally:
-        GPIO.cleanup()  # Cleanup GPIO settings when done
 
 if __name__ == "__main__":
     run_relay_control()

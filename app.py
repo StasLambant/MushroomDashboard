@@ -5,6 +5,7 @@ from flask import Flask, jsonify, render_template, request
 import json
 import sys
 import os
+import RPi.GPIO as GPIO  # Import GPIO module
 
 # Add the 'scripts' directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
@@ -24,6 +25,11 @@ sensor_data = {
 }
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'variables/variables.json')
+RELAY_PIN = humidity_control.RELAY_PIN  # Get the relay pin from the humidity_control module
+
+# Initialize GPIO settings
+GPIO.setmode(GPIO.BCM)  # Use BCM GPIO numbering
+GPIO.setup(RELAY_PIN, GPIO.IN)  # Set relay pin as input for reading
 
 def load_config():
     """Load configuration settings from variables.json."""
@@ -93,8 +99,8 @@ def home():
 def fetch_relay_state():
     """Return the current state of the relay."""
     try:
-        relay_state = GPIO.input(RELAY_PIN)  # Assuming RELAY_PIN is defined in humidity_control.py
-        return jsonify({"relay_state": "LOW" if relay_state == GPIO.LOW else "HIGH"})
+        relay_state = GPIO.input(RELAY_PIN)  # Read the current state of the relay pin
+        return jsonify({"relay_state": relay_state})  # Return the raw GPIO value (0 or 1)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

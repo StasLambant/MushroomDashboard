@@ -138,11 +138,23 @@ function fetchRelayState() {
     fetch('/relay_state')
         .then(response => response.json())
         .then(data => {
-            const relayState = data.relay_state === "LOW" ? "ON" : "OFF";
+            // Interpret the relay state (0 = LOW = ON, 1 = HIGH = OFF)
+            const relayState = data.relay_state === 0 ? "ON" : "OFF";
             document.getElementById('relay-state-value').textContent = relayState;
+
+            // Update the box color based on the relay state
+            const relayStateBox = document.getElementById('relay-state-box');
+            if (relayState === "ON") {
+                relayStateBox.style.backgroundColor = "#4CAF50"; // Green for ON
+            } else {
+                relayStateBox.style.backgroundColor = "#FF5733"; // Red for OFF
+            }
         })
         .catch(error => console.error('Error fetching relay state:', error));
 }
+
+// Fetch relay state every 2 seconds
+setInterval(fetchRelayState, 2000);
 
 // Timeframe change listener
 document.getElementById('timeframe').addEventListener('change', function () {
@@ -233,11 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 sensor_fail_limit: sensorFailLimit
             }),
         })
-            .then(response => response.json())
-            .then(data => {
-                alert('Settings saved successfully!');
-                modal.style.display = 'none';
-            })
+//            .then(response => response.json())
+//            .then(data => {
+//                alert('Settings saved successfully!');
+//                modal.style.display = 'none';
+//            })
             .catch(error => {
                 console.error('Error saving configuration:', error);
                 alert('Failed to save settings. Please try again.');

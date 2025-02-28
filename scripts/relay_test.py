@@ -21,6 +21,10 @@ class TestHumidityControl(unittest.TestCase):
         # Mock time.time() to simulate passage of time
         mock_time.time.return_value = 1000  # Simulate a fixed time
 
+        # Initialize last_relay_state and last_switch_time
+        humidity_control.last_relay_state = mock_gpio.HIGH
+        humidity_control.last_switch_time = 0
+
         # Test case 1: Humidity below lower threshold (relay should turn ON)
         mock_get_sensor_data.get_sensor_data.return_value = (25.0, 80.0)  # (temperature, humidity)
         humidity_control.check_and_control_relay()
