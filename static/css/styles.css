@@ -3,7 +3,9 @@ body {
 }
 
 .chart {
-    margin-bottom: 50px;
+    margin-bottom: 0px;
+    width: 600px;
+    height: 200px;
 }
 
 .line {

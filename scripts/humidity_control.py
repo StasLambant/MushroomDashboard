@@ -23,6 +23,8 @@ last_relay_state = GPIO.HIGH  # Stores last known relay state
 last_switch_time = 0  # Timestamp of last relay switch
 sensor_fail_count = 0  # Tracks consecutive sensor failures
 
+# Stop flag for graceful shutdown
+stop_flag = False
 
 def load_config():
     """
@@ -42,7 +44,6 @@ def load_config():
         print(f"Error loading configuration: {e}")
         return 85.00, 88.22, 15, 10  # Default values if loading fails
 
-
 def check_and_control_relay():
     """
     Fetch humidity from the sensor and control the relay based on thresholds.
@@ -50,8 +51,7 @@ def check_and_control_relay():
     """
     global last_relay_state, last_switch_time, sensor_fail_count
 
-    # Reload configuration every time to ensure real-time updates
-    lower_threshold, upper_threshold, debounce_delay, sensor_fail_limit = load_config()
+    lower_threshold, upper_threshold, debounce_delay, sensor_fail_limit = load_config()  # Get updated settings
 
     try:
         temperature, humidity = get_sensor_data.get_sensor_data()  # Fetch sensor data
@@ -59,7 +59,7 @@ def check_and_control_relay():
         if humidity is None:
             sensor_fail_count += 1
             print(f"Sensor read failed ({sensor_fail_count}/{sensor_fail_limit})")
-
+            
             # If sensor keeps failing, turn relay OFF for safety
             if sensor_fail_count >= sensor_fail_limit:
                 if last_relay_state == GPIO.LOW:
@@ -67,7 +67,7 @@ def check_and_control_relay():
                     last_relay_state = GPIO.HIGH
                     print("Sensor failure: Turning relay OFF for safety.")
             return  # Skip further processing on failure
-
+        
         # Reset sensor failure count on successful read
         sensor_fail_count = 0
         print(f"Current Humidity: {humidity}%")
@@ -102,7 +102,6 @@ def check_and_control_relay():
     except Exception as e:
         print(f"Error in relay control logic: {e}")
 
-
 def initialize_relay_state():
     """
     Reads initial humidity and sets the correct relay state on startup.
@@ -127,21 +126,28 @@ def initialize_relay_state():
         print("Startup: Sensor read failed, defaulting relay to OFF for safety.")
         GPIO.output(RELAY_PIN, GPIO.HIGH)  # Fail-safe default
 
-
 def run_relay_control():
     """Continuously monitor humidity and control relay based on thresholds."""
+    global stop_flag
     initialize_relay_state()  # Ensure correct startup state
 
     try:
-        while True:
+        while not stop_flag:  # Check the stop flag
             check_and_control_relay()
             time.sleep(3)  # Check every 3 seconds (adjustable)
-
     except KeyboardInterrupt:
         print("Relay control stopped.")
+    except Exception as e:
+        print(f"Error in humidity control thread: {e}")
     finally:
-        GPIO.cleanup()  # Cleanup GPIO settings on exit
+        print("Cleaning up GPIO in humidity control...")
+        GPIO.cleanup()
 
+def stop_relay_control():
+    """Signal the relay control loop to stop."""
+    global stop_flag
+    stop_flag = True
+    print("Stopping humidity control thread...")
 
 if __name__ == "__main__":
     run_relay_control()

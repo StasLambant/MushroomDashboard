@@ -6,6 +6,7 @@ import json
 import sys
 import os
 import RPi.GPIO as GPIO  # Import GPIO module
+import atexit
 
 # Add the 'scripts' directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
@@ -27,9 +28,14 @@ sensor_data = {
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'variables/variables.json')
 RELAY_PIN = humidity_control.RELAY_PIN  # Get the relay pin from the humidity_control module
 
-# Initialize GPIO settings
-GPIO.setmode(GPIO.BCM)  # Use BCM GPIO numbering
-GPIO.setup(RELAY_PIN, GPIO.IN)  # Set relay pin as input for reading
+# Cleanup GPIO on exit
+def cleanup_gpio():
+    print("Cleaning up GPIO...")
+    humidity_control.stop_relay_control()  # Signal the humidity control thread to stop
+    time.sleep(1)  # Give the thread time to stop
+    GPIO.cleanup()
+
+atexit.register(cleanup_gpio)
 
 def load_config():
     """Load configuration settings from variables.json."""
@@ -128,6 +134,7 @@ if __name__ == "__main__":
     sensor_thread = threading.Thread(target=update_sensor_data)
     sensor_thread.daemon = True
     sensor_thread.start()
+    print("Sensor data thread started.")
 
     # Start the database writer thread
     db_writer_thread = threading.Thread(
@@ -136,11 +143,14 @@ if __name__ == "__main__":
     )
     db_writer_thread.daemon = True
     db_writer_thread.start()
+    print("Database writer thread started.")
 
     # Start the humidity control thread
     humidity_control_thread = threading.Thread(target=humidity_control.run_relay_control)
     humidity_control_thread.daemon = True  # Mark the thread as a daemon so it exits with the main program
     humidity_control_thread.start()
+    print("Humidity control thread started.")
 
     # Start the Flask server (accessible on your local network)
+    print("Starting Flask server...")
     app.run(host='0.0.0.0', port=5000)
