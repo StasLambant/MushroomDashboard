@@ -83,10 +83,10 @@ def fetch_sensor_data_7day():
 
 @app.route('/config', methods=['GET'])
 def get_config():
-    """Retrieve the current configuration settings."""
     return jsonify(load_config())
 
-@app.route('/config', methods=['POST'])
+
+@app.route('/config', methods=['POST'])#
 def update_config():
     """Update the configuration settings."""
     try:

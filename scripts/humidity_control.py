@@ -31,6 +31,7 @@ def load_config():
     Load humidity thresholds, debounce delay, and sensor fail limit from JSON.
     Returns (lower_threshold, upper_threshold, debounce_delay, sensor_fail_limit).
     """
+def load_config():
     try:
         with open(THRESHOLD_FILE, 'r') as file:
             data = json.load(file)
@@ -39,10 +40,30 @@ def load_config():
                 data.get("upper", 88.22),
                 data.get("debounce_delay", 15),
                 data.get("sensor_fail_limit", 10),
+                data.get("mode", "AUTO")
             )
     except Exception as e:
         print(f"Error loading configuration: {e}")
-        return 85.00, 88.22, 15, 10  # Default values if loading fails
+        return 85.00, 88.22, 15, 10, "AUTO"
+
+
+def check_and_control_relay(): #manual mode
+    global last_relay_state, last_switch_time, sensor_fail_count
+
+    lower_threshold, upper_threshold, debounce_delay, sensor_fail_limit, mode = load_config()
+
+    if mode == "ON":
+        GPIO.output(RELAY_PIN, GPIO.LOW)
+        last_relay_state = GPIO.LOW
+        print("Mode ON: Forcing relay ON")
+        return
+    elif mode == "OFF":
+        GPIO.output(RELAY_PIN, GPIO.HIGH)
+        last_relay_state = GPIO.HIGH
+        print("Mode OFF: Forcing relay OFF")
+        return
+
+    # If mode is AUTO, proceed with normal logic...
 
 def check_and_control_relay():
     """

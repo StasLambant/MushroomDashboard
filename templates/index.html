@@ -30,6 +30,24 @@
                 <option value="7day">7 Days</option>
             </select>
         </div>
+
+        <!--
+        <div class="toggle-container">
+            <label for="mode-toggle">Humidifier Mode:</label>
+            <div class="three-state-toggle" id="mode-toggle">
+                <input type="radio" name="mode" value="ON" id="mode-on">
+                <label for="mode-on">ON</label>
+        
+                <input type="radio" name="mode" value="AUTO" id="mode-auto">
+                <label for="mode-auto">AUTO</label>
+        
+                <input type="radio" name="mode" value="OFF" id="mode-off">
+                <label for="mode-off">OFF</label>
+        
+                <div class="slider"></div>
+            </div>
+        </div>
+        -->        
         <button id="settings-button" class="button">Settings</button>
     </div>
 
@@ -44,29 +62,46 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal">
-        <div class="modal-content">
-            <span id="close-modal" class="close-button">&times;</span>
-            <h2>Humidity Settings</h2>
-            <div class="settings-input">
-                <label for="humidifier-on">Humidifier ON (Lower Threshold):</label>
-                <input type="text" id="humidifier-on" placeholder="Enter value">
-            </div>
-            <div class="settings-input">
-                <label for="humidifier-off">Humidifier OFF (Upper Threshold):</label>
-                <input type="text" id="humidifier-off" placeholder="Enter value">
-            </div>
-            <div class="settings-input">
-                <label for="debounce-delay">Debounce Delay (seconds):</label>
-                <input type="text" id="debounce-delay" placeholder="Enter value">
-            </div>
-            <div class="settings-input">
-                <label for="sensor-fail-limit">Sensor Fail Limit:</label>
-                <input type="text" id="sensor-fail-limit" placeholder="Enter value">
-            </div>
-            <button id="save-settings" class="button">Save</button>
+   <!-- Settings Modal -->
+<div id="settings-modal" class="modal">
+    <div class="modal-content">
+        <span id="close-modal" class="close-button">&times;</span>
+        <h2>Humidity Settings</h2>
+
+        <div class="settings-input">
+            <label for="humidifier-on">Humidifier ON (Lower Threshold):</label>
+            <input type="text" id="humidifier-on" placeholder="Enter value">
         </div>
+        <div class="settings-input">
+            <label for="humidifier-off">Humidifier OFF (Upper Threshold):</label>
+            <input type="text" id="humidifier-off" placeholder="Enter value">
+        </div>
+        <div class="settings-input">
+            <label for="debounce-delay">Debounce Delay (seconds):</label>
+            <input type="text" id="debounce-delay" placeholder="Enter value">
+        </div>
+        <div class="settings-input">
+            <label for="sensor-fail-limit">Sensor Fail Limit:</label>
+            <input type="text" id="sensor-fail-limit" placeholder="Enter value">
+        </div>
+
+        <!-- 3-State Toggle -->
+        <div class="settings-input">
+            <label>Humidifier Mode:</label>
+            <div class="three-state-toggle" id="mode-toggle">
+                <input type="radio" name="mode" value="ON" id="mode-on">
+                <label for="mode-on">ON</label>
+
+                <input type="radio" name="mode" value="AUTO" id="mode-auto">
+                <label for="mode-auto">AUTO</label>
+
+                <input type="radio" name="mode" value="OFF" id="mode-off">
+                <label for="mode-off">OFF</label>
+
+                <div class="slider"></div>
+            </div>
+        </div>
+
+        <button id="save-settings" class="button">Save</button>
     </div>
-</body>
-</html>
+</div>
