@@ -1,7 +1,7 @@
 {
   "lower": 85.0,
-  "upper": 88.22,
-  "debounce_delay": 30,
-  "sensor_fail_limit": 3,
+  "upper": 89,
+  "debounce_delay": 1,
+  "sensor_fail_limit": 1,
   "mode": "OFF"
 }
