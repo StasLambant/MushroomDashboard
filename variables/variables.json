@@ -3,5 +3,5 @@
   "upper": 88.22,
   "debounce_delay": 30,
   "sensor_fail_limit": 3,
-  "mode": "ON"
+  "mode": "OFF"
 }
