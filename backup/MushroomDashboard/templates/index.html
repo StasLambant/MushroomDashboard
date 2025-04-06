@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="data-container">
+        <div id="temperature-box" class="data-box">
+            <span>Temperature</span>
+            <div id="temperature-value">-- °C</div>
+        </div>
+        <div id="humidity-box" class="data-box">
+            <span>Humidity</span>
+            <div id="humidity-value">-- %</div>
+        </div>
+        <div class="dropdown">
+            <label for="timeframe">Select Timeframe:</label>
+            <select id="timeframe">
+                <option value="live">Live</option>
+                <option value="1day">1 Day</option>
+                <option value="7day">7 Days</option>
+            </select>
+        </div>
+        <button id="settings-button" class="button">Settings</button>
+    </div>
+
+    <div class="chart-container">
+        <div id="dual-axis-chart" class="chart"></div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span id="close-modal" class="close-button">&times;</span>
+            <h2>Humidity Settings</h2>
+            <form id="settings-form">
+                <div class="settings-input">
+                    <label for="humidifier-on">Humidifier ON (Lower Threshold):</label>
+                    <input type="number" id="humidifier-on" placeholder="Numeric value">
+                </div>
+                <div class="settings-input">
+                    <label for="humidifier-off">Humidifier OFF (Upper Threshold):</label>
+                    <input type="number" id="humidifier-off" placeholder="Enter value">
+                </div>
+                <button id="save-settings" class="button">Save</button>
+            </form>
+            <p id="error-message" class="error"></p>
+        </div>
+    </div>
+
+    <script>
+        const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+        const width = 800 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        const svg = d3.select("#dual-axis-chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Simulated sensor data with missing values
+        const data = [
+            { date: "2024-12-01", value: 20 },
+            { date: "2024-12-02", value: 21 },
+            { date: "2024-12-03", value: null },
+            { date: "2024-12-04", value: 19 },
+            { date: "2024-12-05", value: 22 },
+            { date: "2024-12-06", value: null },
+            { date: "2024-12-07", value: 23 }
+        ];
+
+        const parsedData = data.map(d => ({
+            date: d3.timeParse("%Y-%m-%d")(d.date),
+            value: d.value
+        }));
+
+        const x = d3.scaleTime()
+            .domain(d3.extent(parsedData, d => d.date))
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([d3.min(parsedData, d => d.value) - 1, d3.max(parsedData, d => d.value) + 1])
+            .nice()
+            .range([height, 0]);
+
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x));
+
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        // Define the line generator
+        const line = d3.line()
+            .defined(d => d.value !== null) // Ignore null values
+            .x(d => x(d.date))
+            .y(d => y(d.value));
+
+        // Append the line path
+        svg.append("path")
+            .datum(parsedData)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1.5)
+            .attr("d", line);
+
+        // Add dots for data points
+        svg.selectAll("circle")
+            .data(parsedData.filter(d => d.value !== null))
+            .enter()
+            .append("circle")
+            .attr("cx", d => x(d.date))
+            .attr("cy", d => y(d.value))
+            .attr("r", 3)
+            .attr("fill", "steelblue");
+    </script>
+</body>
+</html>
