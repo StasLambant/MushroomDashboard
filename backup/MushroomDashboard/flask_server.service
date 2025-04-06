@@ -1,0 +1,13 @@
+[Unit]
+Description=Flask Application Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/slambant1/Desktop/MushroomDashboard/app.py
+WorkingDirectory=/home/slambant1/Desktop/MushroomDashboard/
+Restart=always
+User=slambant1
+Environment=FLASK_ENV=production
+
+[Install]
+WantedBy=multi-user.target

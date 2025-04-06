@@ -6,7 +6,6 @@
     <title>Sensor Dashboard</title>
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <link rel="stylesheet" href="/static/css/styles.css">
-    <!-- Link to the external scripts.js -->
     <script src="/static/js/scripts.js" defer></script>
 </head>
 <body>
@@ -19,6 +18,10 @@
             <span>Humidity</span>
             <div id="humidity-value">-- %</div>
         </div>
+        <div id="relay-state-box" class="data-box">
+            <span>Humidifier State</span>
+            <div id="relay-state-value">--</div>
+        </div>
         <div class="dropdown">
             <label for="timeframe">Select Timeframe:</label>
             <select id="timeframe">
@@ -27,10 +30,78 @@
                 <option value="7day">7 Days</option>
             </select>
         </div>
+
+        <!--
+        <div class="toggle-container">
+            <label for="mode-toggle">Humidifier Mode:</label>
+            <div class="three-state-toggle" id="mode-toggle">
+                <input type="radio" name="mode" value="ON" id="mode-on">
+                <label for="mode-on">ON</label>
+        
+                <input type="radio" name="mode" value="AUTO" id="mode-auto">
+                <label for="mode-auto">AUTO</label>
+        
+                <input type="radio" name="mode" value="OFF" id="mode-off">
+                <label for="mode-off">OFF</label>
+        
+                <div class="slider"></div>
+            </div>
+        </div>
+        -->        
+        <button id="settings-button" class="button">Settings</button>
     </div>
 
     <div class="chart-container">
-        <div id="dual-axis-chart" class="chart"></div>
+        <div class="chart-wrapper">
+            <h3 class="chart-header">TEMPERATURE</h3>
+            <div id="temperature-chart" class="chart"></div>
+        </div>
+        <div class="chart-wrapper">
+            <h3 class="chart-header">HUMIDITY</h3>
+            <div id="humidity-chart" class="chart"></div>
+        </div>
     </div>
-</body>
-</html>
+
+   <!-- Settings Modal -->
+<div id="settings-modal" class="modal">
+    <div class="modal-content">
+        <span id="close-modal" class="close-button">&times;</span>
+        <h2>Humidity Settings</h2>
+
+        <div class="settings-input">
+            <label for="humidifier-on">Humidifier ON (Lower Threshold):</label>
+            <input type="text" id="humidifier-on" placeholder="Enter value">
+        </div>
+        <div class="settings-input">
+            <label for="humidifier-off">Humidifier OFF (Upper Threshold):</label>
+            <input type="text" id="humidifier-off" placeholder="Enter value">
+        </div>
+        <div class="settings-input">
+            <label for="debounce-delay">Debounce Delay (seconds):</label>
+            <input type="text" id="debounce-delay" placeholder="Enter value">
+        </div>
+        <div class="settings-input">
+            <label for="sensor-fail-limit">Sensor Fail Limit:</label>
+            <input type="text" id="sensor-fail-limit" placeholder="Enter value">
+        </div>
+
+        <!-- 3-State Toggle -->
+        <div class="settings-input">
+            <label>Humidifier Mode:</label>
+            <div class="three-state-toggle" id="mode-toggle">
+                <input type="radio" name="mode" value="ON" id="mode-on">
+                <label for="mode-on">ON</label>
+
+                <input type="radio" name="mode" value="AUTO" id="mode-auto">
+                <label for="mode-auto">AUTO</label>
+
+                <input type="radio" name="mode" value="OFF" id="mode-off">
+                <label for="mode-off">OFF</label>
+
+                <div class="slider"></div>
+            </div>
+        </div>
+
+        <button id="save-settings" class="button">Save</button>
+    </div>
+</div>
