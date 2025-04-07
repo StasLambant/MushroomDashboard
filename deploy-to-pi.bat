@@ -11,7 +11,7 @@ echo.
 echo Deploying code to Raspberry Pi (%PI_HOST%)...
 echo --------------------------------------------
 
-ssh %PI_USER%@%PI_HOST% "cd %PI_PROJECT_DIR% && git pull origin %GIT_BRANCH% && sudo systemctl restart flask_server.service"
+ssh %PI_USER%@%PI_HOST% "cd %PI_PROJECT_DIR% && git reset --hard HEAD && git clean -fdx -e __pycache__/ -e '*.pyc' -e '*.pyo' -e '*.pyd' -e '*.db' -e venv/ -e venv/** -e venv/**/* -e .venv/ -e .vscode/ -e .DS_Store -e Thumbs.db && git pull origin %GIT_BRANCH% && sudo systemctl restart flask_server.service"
 
 echo --------------------------------------------
 echo Deployment complete!
