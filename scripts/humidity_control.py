@@ -65,15 +65,6 @@ def check_and_control_relay(): #manual mode
 
     # If mode is AUTO, proceed with normal logic...
 
-def check_and_control_relay():
-    """
-    Fetch humidity from the sensor and control the relay based on thresholds.
-    Implements debounce logic and failsafe handling.
-    """
-    global last_relay_state, last_switch_time, sensor_fail_count
-
-    lower_threshold, upper_threshold, debounce_delay, sensor_fail_limit = load_config()  # Get updated settings
-
     try:
         temperature, humidity = get_sensor_data.get_sensor_data()  # Fetch sensor data
 
