@@ -120,7 +120,7 @@ def initialize_relay_state():
     """
     global last_relay_state
 
-    lower_threshold, upper_threshold, _, _ = load_config()
+    lower_threshold, upper_threshold, _, _, _ = load_config()
     _, humidity = get_sensor_data.get_sensor_data()
 
     if humidity is not None:
