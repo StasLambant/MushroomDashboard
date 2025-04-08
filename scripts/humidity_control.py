@@ -109,7 +109,7 @@ def check_and_control_relay(): #manual mode
 
         # Maintain current relay state if within thresholds
         else:
-            print("Relay state unchanged.")
+            print("Relay state unchanged.") 
 
     except Exception as e:
         print(f"Error in relay control logic: {e}")
