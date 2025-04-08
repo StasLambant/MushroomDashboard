@@ -227,7 +227,7 @@ body {
     z-index: 1;
     transition: left 0.3s ease;
     left: 33.333%; /* default to AUTO */
-    sustify-content: center;
+    justify-content: center;
 }
 
 input#mode-on:checked ~ .slider {
