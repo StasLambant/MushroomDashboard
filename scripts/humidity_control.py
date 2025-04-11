@@ -22,6 +22,8 @@ GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.HIGH)  # Default relay state OFF
 last_relay_state = GPIO.HIGH  # Stores last known relay state
 last_switch_time = 0  # Timestamp of last relay switch
 sensor_fail_count = 0  # Tracks consecutive sensor failures
+relay_state_lock = threading.Lock() #thread locking for humiditfier state logging
+current_humidifier_state = GPIO.HIGH  #Current state of the humidifier relay used for logging (separate thread to the last_relay_state to avoid thread race conditions)
 
 # Stop flag for graceful shutdown
 stop_flag = False
@@ -56,11 +58,15 @@ def check_and_control_relay(): #manual mode
         GPIO.output(RELAY_PIN, GPIO.LOW)
         last_relay_state = GPIO.LOW
         print("Mode ON: Forcing relay ON")
+        with relay_state_lock:
+            current_humidifier_state = GPIO.LOW
         return
     elif mode == "OFF":
         GPIO.output(RELAY_PIN, GPIO.HIGH)
         last_relay_state = GPIO.HIGH
         print("Mode OFF: Forcing relay OFF")
+        with relay_state_lock:
+            current_humidifier_state = GPIO.HIGH
         return
 
     # If mode is AUTO, proceed with normal logic...
@@ -160,6 +166,10 @@ def stop_relay_control():
     global stop_flag
     stop_flag = True
     print("Stopping humidity control thread...")
+
+def get_relay_state(): #relay state for logging purposes
+    with relay_state_lock:
+        return 0 if current_humidifier_state == GPIO.LOW else 1
 
 if __name__ == "__main__":
     run_relay_control()

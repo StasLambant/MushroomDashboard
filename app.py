@@ -139,7 +139,7 @@ if __name__ == "__main__":
     # Start the database writer thread
     db_writer_thread = threading.Thread(
         target=db_writer.store_sensor_data, 
-        args=(lambda: sensor_data,)  # Pass sensor_data via lambda for live updates
+        args=(lambda: sensor_data, humidity_control.get_relay_state)  # Pass sensor_data via lambda for live updates and get_relay_state for logging realy state 
     )
     db_writer_thread.daemon = True
     db_writer_thread.start()

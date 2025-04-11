@@ -25,25 +25,23 @@ def initialize_database():
     finally:
         conn.close()
 
-def store_sensor_data(fetch_sensor_data):
-    """
-    Continuously store sensor data into the database every 10 seconds.
+def store_sensor_data(fetch_sensor_data, get_humidifier_state):
+    #Continuously store sensor data into the database every 10 seconds (fetch_sensor_data) and log the humidifier state (get_humidifier_state).
 
-    Args:
-        fetch_sensor_data (function): A function that provides the latest sensor data dictionary.
-    """
     while True:
         try:
             sensor_data = fetch_sensor_data()
+            humidifier_state = get_humidifier_state()
+
             if sensor_data["temperature"] is not None and sensor_data["humidity"] is not None:
                 conn = sqlite3.connect(DB_FILE)
                 cursor = conn.cursor()
                 cursor.execute('''
-                    INSERT INTO sensor_data (temperature, humidity)
-                    VALUES (?, ?)
-                ''', (sensor_data["temperature"], sensor_data["humidity"]))
+                    INSERT INTO sensor_data (temperature, humidity, humidifier_state)
+                    VALUES (?, ?, ?)
+                ''', (sensor_data["temperature"], sensor_data["humidity"], humidifier_state))
                 conn.commit()
-                print("Sensor data written to database.")
+                print("Sensor data and humidifier state written to database.")
         except sqlite3.Error as db_error:
             print(f"Database error: {db_error}")
         except Exception as e:

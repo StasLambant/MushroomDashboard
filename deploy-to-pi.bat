@@ -3,7 +3,7 @@ SETLOCAL
 
 REM === Configuration ===
 SET PI_USER=slambant1
-SET PI_HOST=192.168.1.36
+SET PI_HOST=raspberrypi.local
 SET PI_PROJECT_DIR=/home/slambant1/Desktop/MushroomDashboard
 SET GIT_BRANCH=main
 
