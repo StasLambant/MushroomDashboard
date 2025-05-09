@@ -171,5 +171,10 @@ def stop_relay_control():
     stop_flag = True
     print("Stopping humidity control thread...")
 
+# This function is used to get the current relay state to write to the database
+def get_relay_state():
+    with relay_state_lock:
+        return 1 if current_humidifier_state == GPIO.LOW else 0
+
 if __name__ == "__main__":
     run_relay_control()
