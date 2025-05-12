@@ -1,6 +1,6 @@
 import sqlite3
 import time
-import pytz  # Import pytz for time zone handling
+import python3-tz  # Import pytz for time zone handling
 from datetime import datetime
 import get_sensor_data  # Import the new sensor data module.
 
