@@ -1,5 +1,6 @@
 import sqlite3
 import time
+import pytz  # Import pytz for time zone handling
 from datetime import datetime
 import get_sensor_data  # Import the new sensor data module.
 
@@ -31,21 +32,30 @@ def store_sensor_data(fetch_sensor_data, get_humidifier_state):
 
     Args:
         fetch_sensor_data (function): A function that provides the latest sensor data dictionary.
+        get_humidifier_state (function): A function that provides the current humidifier state.
     """
+     # Define the local time zone (UTC+1)
+    local_tz = pytz.timezone('Europe/London')  # Adjust to local time zone
+
     while True:
         try:
             sensor_data = fetch_sensor_data()
             humidifier_state = get_humidifier_state()
             if sensor_data["temperature"] is not None and sensor_data["humidity"] is not None:
+                # Get the current time in the local time zone
+                local_time = datetime.now(local_tz)
+                local_time_str = local_time.strftime('%Y-%m-%d %H:%M:%S')
+
                 conn = sqlite3.connect(DB_FILE)
                 cursor = conn.cursor()
                 cursor.execute('''
-                    INSERT INTO sensor_data (temperature, humidity, humidifier_state)
-                    VALUES (?, ?, ?)
+                    INSERT INTO sensor_data (temperature, humidity, humidifier_state, timestamp)
+                    VALUES (?, ?, ?, ?)
                 ''', (
                     sensor_data["temperature"], 
                     sensor_data["humidity"], 
-                    humidifier_state
+                    humidifier_state,
+                    local_time_str
                 ))
                 conn.commit()
                 print("Sensor data written to database.")
