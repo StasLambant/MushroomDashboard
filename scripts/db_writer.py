@@ -17,6 +17,7 @@ def initialize_database():
                 temperature REAL,
                 humidity REAL,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                humidifier_state TEXT
             )
         ''')
         conn.commit()
