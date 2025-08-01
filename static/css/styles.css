@@ -66,11 +66,19 @@ body {
 .data-container {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
     gap: 10px;
-    padding: 20px; /* Add padding to the data container */
+    padding: 10px; /* Add padding to the data container */
+}
+
+.controls-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0px;
+    gap: 10px;
 }
 
 .data-box {
@@ -92,15 +100,19 @@ body {
 }
 
 #temperature-box {
-    background-color: steelblue;
+    background-color: rgb(78, 121, 167);
 }
 
 #humidity-box {
-    background-color: rgb(255, 153, 0);
+    background-color: rgb(242, 142, 43);
+}
+
+#co2-box {
+    background-color: rgb(175, 122, 161);
 }
 
 #relay-state-box {
-    background-color: #626262; /* Green color for the relay state box */
+    background-color: #626262;
 }
 
 .dropdown {

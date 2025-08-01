@@ -18,10 +18,17 @@
             <span>Humidity</span>
             <div id="humidity-value">-- %</div>
         </div>
+        <div id="co2-box" class="data-box">
+            <span>CO2</span>
+            <div id="co2-value">-- ppm</div>
+        </div>
         <div id="relay-state-box" class="data-box">
             <span>Humidifier State</span>
             <div id="relay-state-value">--</div>
         </div>
+    </div>
+
+    <div class="controls-container">
         <div class="dropdown">
             <label for="timeframe">Select Timeframe:</label>
             <select id="timeframe">
@@ -29,8 +36,8 @@
                 <option value="1day">1 Day</option>
                 <option value="7day">7 Days</option>
             </select>
-        </div>      
         <button id="settings-button" class="button">Settings</button>
+        </div>
     </div>
 
     <div class="chart-container">

@@ -122,6 +122,12 @@ function fetchLiveSensorData() {
 
             document.getElementById('temperature-value').textContent = `${data.temperature.toFixed(1)} °C`;
             document.getElementById('humidity-value').textContent = `${data.humidity.toFixed(1)} %`;
+            if (!window.lastCO2Value) window.lastCO2Value = "--";
+            if ('co2' in data && data.co2 !== null) {
+                window.lastCO2Value = data.co2;
+        }
+
+document.getElementById('co2-value').textContent = `${window.lastCO2Value} ppm`;
             updateTemperatureChart(combinedData);
             updateHumidityChart(combinedData);
         })

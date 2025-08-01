@@ -1,6 +1,6 @@
 import sqlite3
 import time
-import python3-tz  # Import pytz for time zone handling
+from zoneinfo import ZoneInfo  # Use zoneinfo for time zone handling
 from datetime import datetime
 import get_sensor_data  # Import the new sensor data module.
 
@@ -16,8 +16,10 @@ def initialize_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 temperature REAL,
                 humidity REAL,
+                co2 REAL,
+                humidifier_state TEXT,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-                humidifier_state TEXT
+                
             )
         ''')
         conn.commit()
@@ -27,7 +29,7 @@ def initialize_database():
     finally:
         conn.close()
 
-def store_sensor_data(fetch_sensor_data, get_humidifier_state):
+def store_sensor_data(fetch_sensor_data, get_humidifier_state, get_co2_data):
     """
     Continuously store sensor data into the database every 10 seconds.
 
@@ -36,12 +38,13 @@ def store_sensor_data(fetch_sensor_data, get_humidifier_state):
         get_humidifier_state (function): A function that provides the current humidifier state.
     """
      # Define the local time zone (UTC+1)
-    local_tz = pytz.timezone('Europe/London')  # Adjust to local time zone
+    local_tz = ZoneInfo('Europe/London')  # Adjust to local time zone
 
     while True:
         try:
             sensor_data = fetch_sensor_data()
             humidifier_state = get_humidifier_state()
+            co2_data = get_co2_data()
             if sensor_data["temperature"] is not None and sensor_data["humidity"] is not None:
                 # Get the current time in the local time zone
                 local_time = datetime.now(local_tz)
@@ -50,12 +53,13 @@ def store_sensor_data(fetch_sensor_data, get_humidifier_state):
                 conn = sqlite3.connect(DB_FILE)
                 cursor = conn.cursor()
                 cursor.execute('''
-                    INSERT INTO sensor_data (temperature, humidity, humidifier_state, timestamp)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO sensor_data (temperature, humidity, humidifier_state, co2, timestamp)
+                    VALUES (?, ?, ?, ?, ?)
                 ''', (
                     sensor_data["temperature"], 
-                    sensor_data["humidity"], 
+                    sensor_data["humidity"],
                     humidifier_state,
+                    co2_data,
                     local_time_str
                 ))
                 conn.commit()

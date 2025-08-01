@@ -22,6 +22,7 @@ app = Flask(__name__)
 sensor_data = {
     "temperature": None,
     "humidity": None,
+    "co2": None,
     "date": None
 }
 
@@ -115,12 +116,14 @@ def update_sensor_data():
     global sensor_data
     while True:
         temperature, humidity = get_sensor_data.get_sensor_data()  # Fetch sensor data from the get_sensor_data module
+        co2 = get_sensor_data.get_co2()  # Fetch CO2 data from the get_sensor_data module
         if temperature is not None and humidity is not None:
             # Get the current date and time in the specified format
             current_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             sensor_data = {
-                "temperature": round(temperature, 2),
-                "humidity": round(humidity, 2),
+                "temperature": round(temperature, 2) if temperature is not None else None,  # Ensure temperature is rounded and not None
+                "humidity": round(humidity, 2) if humidity is not None else None,  # Ensure humidity is rounded and not None
+                "co2": int(co2) if co2 is not None else None,  # Ensure CO2 is an integer or None
                 "date": current_time  # Add date to the sensor data
             }
             print(f"Updated sensor data: {sensor_data}")
@@ -139,7 +142,7 @@ if __name__ == "__main__":
     # Start the database writer thread
     db_writer_thread = threading.Thread(
         target=db_writer.store_sensor_data, 
-        args=(lambda: sensor_data, humidity_control.get_relay_state)  # Pass sensor_data via lambda for live updates
+        args=(lambda: sensor_data, humidity_control.get_relay_state, get_sensor_data.get_co2)  # Pass sensor_data via lambda for live updates
     )
     db_writer_thread.daemon = True
     db_writer_thread.start()
