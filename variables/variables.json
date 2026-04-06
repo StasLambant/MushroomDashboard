@@ -1,7 +1,9 @@
 {
-  "lower": 82,
-  "upper": 100,
+  "lower": 70,
+  "upper": 72,
   "debounce_delay": 1,
   "sensor_fail_limit": 1,
-  "mode": "OFF"
+  "mode": "AUTO",
+  "alert_threshold": 2,
+  "alert_cooldown": 5
 }

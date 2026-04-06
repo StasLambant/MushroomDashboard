@@ -1,3 +1,5 @@
+# Main Flask server for the mushroom dashboard app; manages routes, threading, and UI updates.
+
 import time
 import threading
 from datetime import datetime, timedelta
@@ -14,6 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
 import db_writer  # Import the database writer module
 import get_sensor_data  # Import the new sensor data script
 import humidity_control  # Import the humidity control script
+import alert_monitor # Import the alert monitoring script
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -23,6 +26,7 @@ sensor_data = {
     "temperature": None,
     "humidity": None,
     "co2": None,
+    "thermocouple": None,
     "date": None
 }
 
@@ -68,7 +72,9 @@ def fetch_sensor_data_1day():
     temperature_data, humidity_data = db_writer.get_sensor_data_for_period(start_time, end_time)
     return jsonify({
         "temperature": temperature_data,
-        "humidity": humidity_data
+        "humidity": humidity_data,
+        "co2": db_writer.get_co2_data_for_period(start_time, end_time),
+        "thermocouple": db_writer.get_thermocouple_data_for_period(start_time, end_time)
     })
 
 @app.route('/sensor_data/7day', methods=['GET'])
@@ -79,7 +85,9 @@ def fetch_sensor_data_7day():
     temperature_data, humidity_data = db_writer.get_sensor_data_for_period(start_time, end_time)
     return jsonify({
         "temperature": temperature_data,
-        "humidity": humidity_data
+        "humidity": humidity_data,
+        "co2": db_writer.get_co2_data_for_period(start_time, end_time),
+        "thermocouple": db_writer.get_thermocouple_data_for_period(start_time, end_time)
     })
 
 @app.route('/config', methods=['GET'])
@@ -87,7 +95,7 @@ def get_config():
     return jsonify(load_config())
 
 
-@app.route('/config', methods=['POST'])#
+@app.route('/config', methods=['POST'])
 def update_config():
     """Update the configuration settings."""
     try:
@@ -117,6 +125,7 @@ def update_sensor_data():
     while True:
         temperature, humidity = get_sensor_data.get_sensor_data()  # Fetch sensor data from the get_sensor_data module
         co2 = get_sensor_data.get_co2()  # Fetch CO2 data from the get_sensor_data module
+        thermocouple = get_sensor_data.get_thermocouple_temp()  # Fetch thermocouple temperature
         if temperature is not None and humidity is not None:
             # Get the current date and time in the specified format
             current_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -124,6 +133,7 @@ def update_sensor_data():
                 "temperature": round(temperature, 2) if temperature is not None else None,  # Ensure temperature is rounded and not None
                 "humidity": round(humidity, 2) if humidity is not None else None,  # Ensure humidity is rounded and not None
                 "co2": int(co2) if co2 is not None else None,  # Ensure CO2 is an integer or None
+                "thermocouple": round(thermocouple, 2) if thermocouple is not None else None,  # Ensure thermocouple is rounded and not None
                 "date": current_time  # Add date to the sensor data
             }
             print(f"Updated sensor data: {sensor_data}")
@@ -153,6 +163,12 @@ if __name__ == "__main__":
     humidity_control_thread.daemon = True  # Mark the thread as a daemon so it exits with the main program
     humidity_control_thread.start()
     print("Humidity control thread started.")
+
+    # Start alert monitoring thread
+    alert_thread = threading.Thread(target=alert_monitor.run_alert_monitor)
+    alert_thread.daemon = True
+    alert_thread.start()
+    print("Alert monitoring thread started.")
 
     # Start the Flask server (accessible on your local network)
     print("Starting Flask server...")

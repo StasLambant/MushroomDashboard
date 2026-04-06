@@ -1,3 +1,5 @@
+/* Styling for dashboard layout, data boxes, chart containers, modal, and controls. */
+
 body {
     font-family: sans-serif;
     margin: 0;
@@ -250,4 +252,29 @@ input#mode-auto:checked ~ .slider {
 }
 input#mode-off:checked ~ .slider {
     left: 66.666%;
+}
+
+/* Snackbar styles for settings saved pop up*/
+#snackbar {
+    visibility: hidden;
+    min-width: 200px;
+    background-color: #4CAF50;
+    color: white;
+    text-align: center;
+    padding: 12px 24px;
+    border-radius: 4px;
+    position: fixed;
+    left: 50%;
+    bottom: -100px;
+    transform: translateX(-50%);
+    z-index: 9999;
+    font-size: 16px;
+    transition: bottom 0.4s ease, opacity 0.4s ease;
+    opacity: 0;
+}
+
+#snackbar.show {
+    visibility: visible;
+    bottom: 30px;
+    opacity: 1;
 }

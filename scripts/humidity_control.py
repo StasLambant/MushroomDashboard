@@ -1,9 +1,12 @@
+# Handles logic for automatic humidifier control based on humidity thresholds and safety settings.
+
 import RPi.GPIO as GPIO
 import time
 import sys
 import os
 import json
 import threading
+
 
 # Add the 'scripts' folder to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
@@ -21,7 +24,7 @@ GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.HIGH)  # Default relay state OFF
 
 # Global state variables
 last_relay_state = GPIO.HIGH  # Stores last known relay state
-relay_state_lock = threading.Lock()
+relay_state_lock = threading.Lock() # Lock for thread-safe relay state access
 current_humidifier_state = GPIO.HIGH  # Default OFF
 last_switch_time = 0  # Timestamp of last relay switch
 sensor_fail_count = 0  # Tracks consecutive sensor failures
