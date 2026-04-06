@@ -5,22 +5,17 @@ import busio
 import adafruit_sht31d
 import adafruit_scd4x
 from datetime import datetime
-import spidev
 
-# Initialize I2C bus and sensor
-i2c = busio.I2C(board.SCL, board.SDA)
-
-#initialize SHT3x sensor (temperature and humidity)
-sht31 = adafruit_sht31d.SHT31D(i2c)
-# Initialize SCD4x sensor (CO2, temperature, humidity)
-scd4x = adafruit_scd4x.SCD4X(i2c)
-scd4x.start_periodic_measurement()  # Start periodic measurement for SCD4x
-
-# Initialize SPI for thermocouple
-spi = spidev.SpiDev()
-spi.open(0, 0)   # bus 0, CE0
-spi.max_speed_hz = 5000000
-spi.mode = 0
+try:
+    import spidev
+    spi = spidev.SpiDev()
+    spi.open(0, 0)   # bus 0, CE0
+    spi.max_speed_hz = 5000000
+    spi.mode = 0
+    SPI_AVAILABLE = True
+except (ImportError, FileNotFoundError, OSError):
+    SPI_AVAILABLE = False
+    spi = None
 
 # Initialize I2C bus and sensor
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -64,6 +59,8 @@ def get_co2():
 
 def get_thermocouple_temp():
     """Fetch temperature from the MAX31855 thermocouple."""
+    if not SPI_AVAILABLE:
+        return None
     try:
         # Read 4 bytes from the MAX31855
         raw = spi.xfer2([0x00, 0x00, 0x00, 0x00])

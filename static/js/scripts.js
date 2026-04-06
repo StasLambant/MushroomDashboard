@@ -192,13 +192,15 @@ function updateThermocoupleChart(data) {
         .domain([new Date(now.getTime() - (timeframe === "live" ? 60000 : (timeframe === "1day" ? 86400000 : 604800000))), now])
         .range([0, width]);
 
+    const validData = data.filter(d => d.thermocouple !== null);
     const y = d3.scaleLinear()
-        .domain([d3.min(data, d => d.thermocouple) - 1, d3.max(data, d => d.thermocouple) + 1])
+        .domain(validData.length > 0 ? [d3.min(validData, d => d.thermocouple) - 1, d3.max(validData, d => d.thermocouple) + 1] : [20, 30])
         .range([height, 0]);
 
     const line = d3.line()
         .x(d => x(d.time))
-        .y(d => y(d.thermocouple));
+        .y(d => y(d.thermocouple))
+        .defined(d => d.thermocouple !== null);
 
     svg.select('.x-axis').call(d3.axisBottom(x));
     svg.select('.thermocouple-axis').call(d3.axisLeft(y).ticks(5).tickFormat(d => `${d} °C`));
@@ -217,7 +219,7 @@ function fetchLiveSensorData() {
                 temperature: parseFloat(data.temperature.toFixed(1)),
                 humidity: parseFloat(data.humidity.toFixed(1)),
                 co2: parseFloat(data.co2),
-                thermocouple: parseFloat(data.thermocouple.toFixed(1))
+                thermocouple: data.thermocouple !== null ? parseFloat(data.thermocouple.toFixed(1)) : null
             });
             if (combinedData.length > 60) combinedData.shift();
 
