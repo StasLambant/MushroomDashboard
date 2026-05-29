@@ -364,6 +364,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById(`mode-${config.mode.toLowerCase()}`).checked = true;
                 document.getElementById('alert-threshold').value = config.alert_threshold || 15; //get alert threshold into settings modal (default to 15 sec if not set)
                 document.getElementById('alert-cooldown').value = config.alert_cooldown; //get alert cooldown into settings modal
+                document.getElementById('thermocouple-target').value = config.thermocouple_target || 25;
+                document.getElementById('thermocouple-cooldown').value = config.thermocouple_cooldown || 20;
 
                 modal.style.display = 'block';
             })
@@ -382,6 +384,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const mode = document.querySelector('input[name="mode"]:checked').value;
         const alertThreshold = parseFloat(document.getElementById('alert-threshold').value);
         const alertCooldown = parseFloat(document.getElementById('alert-cooldown').value);
+        const thermocoupleTarget = parseFloat(document.getElementById('thermocouple-target').value);
+        const thermocoupleCooldown = parseFloat(document.getElementById('thermocouple-cooldown').value);
 
         if (isNaN(humidifierOn) || isNaN(humidifierOff) || isNaN(debounceDelay) || isNaN(sensorFailLimit)) {
             alert('All inputs must be numeric');
@@ -408,6 +412,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (isNaN(thermocoupleTarget) || thermocoupleTarget < 0 || thermocoupleTarget > 100) {
+            alert('Thermocouple target temperature must be between 0 and 100°C');
+            return;
+        }
+
+        if (isNaN(thermocoupleCooldown) || thermocoupleCooldown < 0 || thermocoupleCooldown > 100) {
+            alert('Thermocouple cooldown temperature must be between 0 and 100°C');
+            return;
+        }
+
+        if (thermocoupleCooldown >= thermocoupleTarget) {
+            alert('Cooldown temperature must be lower than target temperature');
+            return;
+        }
+
         fetch('/config', {
             method: 'POST',
             headers: {
@@ -420,7 +439,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 sensor_fail_limit: sensorFailLimit,
                 mode: mode,
                 alert_threshold: alertThreshold,
-                alert_cooldown: alertCooldown
+                alert_cooldown: alertCooldown,
+                thermocouple_target: thermocoupleTarget,
+                thermocouple_cooldown: thermocoupleCooldown
             }),
         })
             .then(response => response.json())

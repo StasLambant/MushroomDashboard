@@ -9,6 +9,7 @@ import os
 import app
 
 last_alert_time = 0
+thermocouple_target_reached = False  # Track if target temperature has been reached
 
 def send_telegram_alert(message):
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -31,7 +32,7 @@ def send_telegram_alert(message):
         print(f"Telegram exception: {e}")
 
 def alert_monitor():
-    global last_alert_time
+    global last_alert_time, thermocouple_target_reached
 
     while True:
         config = app.load_config()
@@ -40,10 +41,14 @@ def alert_monitor():
         upper = config.get("upper", 70)
         alert_threshold = config.get("alert_threshold", 5)
         cooldown = config.get("alert_cooldown", 15)
+        thermocouple_target = config.get("thermocouple_target", 25)
+        thermocouple_cooldown = config.get("thermocouple_cooldown", 20)
 
         try:
             _, humidity = get_sensor_data.get_sensor_data()
+            thermocouple_temp = get_sensor_data.get_thermocouple_temp()
 
+            # Humidity alerting (existing logic)
             if humidity is not None:
                 lower_limit = lower - alert_threshold
                 upper_limit = upper + alert_threshold
@@ -57,6 +62,31 @@ def alert_monitor():
                         print(f"[{datetime.now()}] ALERT SENT: {message}")
             else:
                 print("Humidity read failed in alert_monitor.")
+
+            # Thermocouple alerting (new logic)
+            if thermocouple_temp is not None:
+                now = time.time()
+
+                if not thermocouple_target_reached and thermocouple_temp >= thermocouple_target:
+                    # Target temperature reached - alert to turn off heating
+                    if now - last_alert_time >= cooldown:
+                        message = f"🔥 Thermocouple Alert: Target temperature reached! {thermocouple_temp:.1f}°C (≥ {thermocouple_target}°C). Turn off heating now!"
+                        send_telegram_alert(message)
+                        last_alert_time = now
+                        thermocouple_target_reached = True
+                        print(f"[{datetime.now()}] TARGET ALERT SENT: {message}")
+
+                elif thermocouple_target_reached and thermocouple_temp <= thermocouple_cooldown:
+                    # Cooled down to safe handling temperature
+                    if now - last_alert_time >= cooldown:
+                        message = f"❄️ Thermocouple Alert: Cooled to safe temperature! {thermocouple_temp:.1f}°C (≤ {thermocouple_cooldown}°C). Safe for handling."
+                        send_telegram_alert(message)
+                        last_alert_time = now
+                        thermocouple_target_reached = False  # Reset for next heating cycle
+                        print(f"[{datetime.now()}] COOLDOWN ALERT SENT: {message}")
+
+            else:
+                print("Thermocouple read failed in alert_monitor.")
 
         except Exception as e:
             print(f"Error in alert_monitor: {e}")

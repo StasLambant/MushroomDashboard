@@ -5,5 +5,7 @@
   "sensor_fail_limit": 1,
   "mode": "AUTO",
   "alert_threshold": 2,
-  "alert_cooldown": 5
+  "alert_cooldown": 5,
+  "thermocouple_target": 25,
+  "thermocouple_cooldown": 20
 }

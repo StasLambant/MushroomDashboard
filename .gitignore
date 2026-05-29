@@ -11,6 +11,9 @@ env/
 # Local databases
 *.db
 
+# Configuration files with sensitive data
+variables.json
+
 # VS Code settings (optional)
 .vscode/
 
